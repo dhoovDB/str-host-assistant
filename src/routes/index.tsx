@@ -18,6 +18,9 @@ type ChecklistKey = "notified" | "confirmed" | "reminder" | "done";
 
 type Booking = {
   id: number;
+  guestName: string;
+  guests: number;
+  reservationUrl: string;
   checkIn: string;
   checkOut: string;
   nights: number;
@@ -35,9 +38,9 @@ type Gap = {
 };
 
 const initialBookings: Booking[] = [
-  { id: 1, checkIn: "May 10", checkOut: "May 12", nights: 2, turnover: "11am–3pm May 12 (same-day check-in)", status: "Active", checklist: { notified: true, confirmed: true, reminder: false, done: false }, sameDayTurnaround: true },
-  { id: 2, checkIn: "May 12", checkOut: "May 15", nights: 3, turnover: "Check-in 3pm May 12", status: "Upcoming", checklist: { notified: true, confirmed: true, reminder: false, done: false } },
-  { id: 3, checkIn: "May 17", checkOut: "May 21", nights: 4, turnover: "10am–3pm May 17", status: "Upcoming", checklist: { notified: true, confirmed: false, reminder: false, done: false } },
+  { id: 1, guestName: "Sarah K.", guests: 2, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMABCD1234", checkIn: "May 10", checkOut: "May 12", nights: 2, turnover: "11am–3pm May 12 (same-day check-in)", status: "Active", checklist: { notified: true, confirmed: true, reminder: false, done: false }, sameDayTurnaround: true },
+  { id: 2, guestName: "Marcus T.", guests: 4, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMEFGH5678", checkIn: "May 12", checkOut: "May 15", nights: 3, turnover: "Check-in 3pm May 12", status: "Upcoming", checklist: { notified: true, confirmed: true, reminder: false, done: false } },
+  { id: 3, guestName: "Priya R.", guests: 3, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMIJKL9012", checkIn: "May 17", checkOut: "May 21", nights: 4, turnover: "10am–3pm May 17", status: "Upcoming", checklist: { notified: true, confirmed: false, reminder: false, done: false } },
 ];
 
 const gaps: Gap[] = [
@@ -132,9 +135,20 @@ function BookingCard({ booking, onToggle }: { booking: Booking; onToggle: (key: 
           {booking.sameDayTurnaround && (
             <span title="Same-day turnaround" aria-label="Same-day turnaround alert">🚨</span>
           )}
-          {booking.checkIn} → {booking.checkOut}
+          {booking.guestName} · {booking.guests} {booking.guests === 1 ? "guest" : "guests"}
         </div>
         <StatusBadge status={booking.status} />
+      </div>
+      <div style={{ fontSize: 13, color: "var(--color-text-primary)", marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        <span>{booking.checkIn} → {booking.checkOut}</span>
+        <a
+          href={booking.reservationUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ fontSize: 12, color: "var(--color-teal)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 600 }}
+        >
+          View on Airbnb <i className="ti ti-external-link" style={{ fontSize: 12 }} />
+        </a>
       </div>
       <div style={{ fontSize: 13, color: "var(--color-text-muted)", marginTop: 4 }}>
         {booking.nights} nights · Turnover window: {booking.turnover}
