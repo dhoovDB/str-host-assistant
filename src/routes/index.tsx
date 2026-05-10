@@ -14,7 +14,7 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
-type ChecklistKey = "notified" | "confirmed" | "done";
+type ChecklistKey = "notified" | "confirmed" | "reminder" | "done";
 
 type Booking = {
   id: number;
@@ -24,6 +24,7 @@ type Booking = {
   turnover: string;
   status: "Active" | "Upcoming";
   checklist: Record<ChecklistKey, boolean>;
+  sameDayTurnaround?: boolean;
 };
 
 type Gap = {
@@ -34,8 +35,9 @@ type Gap = {
 };
 
 const initialBookings: Booking[] = [
-  { id: 1, checkIn: "May 10", checkOut: "May 12", nights: 2, turnover: "10am–4pm May 12", status: "Active", checklist: { notified: true, confirmed: true, done: false } },
-  { id: 2, checkIn: "May 13", checkOut: "May 17", nights: 4, turnover: "10am–4pm May 17", status: "Upcoming", checklist: { notified: true, confirmed: false, done: false } },
+  { id: 1, checkIn: "May 10", checkOut: "May 12", nights: 2, turnover: "11am–3pm May 12 (same-day check-in)", status: "Active", checklist: { notified: true, confirmed: true, reminder: false, done: false }, sameDayTurnaround: true },
+  { id: 2, checkIn: "May 12", checkOut: "May 15", nights: 3, turnover: "Check-in 3pm May 12", status: "Upcoming", checklist: { notified: true, confirmed: true, reminder: false, done: false } },
+  { id: 3, checkIn: "May 17", checkOut: "May 21", nights: 4, turnover: "10am–3pm May 17", status: "Upcoming", checklist: { notified: true, confirmed: false, reminder: false, done: false } },
 ];
 
 const gaps: Gap[] = [
@@ -113,6 +115,7 @@ function BookingCard({ booking, onToggle }: { booking: Booking; onToggle: (key: 
   const steps: { key: ChecklistKey; label: string }[] = [
     { key: "notified", label: "Notified" },
     { key: "confirmed", label: "Confirmed" },
+    { key: "reminder", label: "Reminder" },
     { key: "done", label: "Done" },
   ];
   return (
@@ -125,7 +128,10 @@ function BookingCard({ booking, onToggle }: { booking: Booking; onToggle: (key: 
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-primary)" }}>
+        <div style={{ fontSize: 15, fontWeight: 700, color: "var(--color-text-primary)", display: "flex", alignItems: "center", gap: 6 }}>
+          {booking.sameDayTurnaround && (
+            <span title="Same-day turnaround" aria-label="Same-day turnaround alert">🚨</span>
+          )}
           {booking.checkIn} → {booking.checkOut}
         </div>
         <StatusBadge status={booking.status} />
@@ -133,6 +139,11 @@ function BookingCard({ booking, onToggle }: { booking: Booking; onToggle: (key: 
       <div style={{ fontSize: 13, color: "var(--color-text-muted)", marginTop: 4 }}>
         {booking.nights} nights · Turnover window: {booking.turnover}
       </div>
+      {booking.sameDayTurnaround && (
+        <div style={{ fontSize: 12, color: "var(--color-warning)", marginTop: 4, fontWeight: 600 }}>
+          Same-day turnaround — next guest checks in 3pm
+        </div>
+      )}
       <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
         {steps.map((s) => (
           <ChecklistStep
@@ -224,6 +235,13 @@ function Index() {
 
         <section>
           <SectionHeader>Upcoming bookings</SectionHeader>
+          <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: "0 0 12px", lineHeight: 1.5 }}>
+            Standard check-in is 3pm.{" "}
+            <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Notified</strong>: cleaners have been told.{" "}
+            <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Confirmed</strong>: cleaner has agreed.{" "}
+            <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Reminder</strong>: follow-up sent 1–2 days before with checkout date and window.{" "}
+            <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Done</strong>: turnover complete.
+          </p>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             {bookings.map((b) => (
               <BookingCard key={b.id} booking={b} onToggle={(k) => toggle(b.id, k)} />
