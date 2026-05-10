@@ -28,6 +28,7 @@ type Booking = {
   status: "Active" | "Upcoming";
   checklist: Record<ChecklistKey, boolean>;
   sameDayTurnaround?: boolean;
+  notes: string;
 };
 
 type Gap = {
@@ -38,9 +39,9 @@ type Gap = {
 };
 
 const initialBookings: Booking[] = [
-  { id: 1, guestName: "Sarah K.", guests: 2, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMABCD1234", checkIn: "May 10", checkOut: "May 12", nights: 2, turnover: "11am–3pm May 12 (same-day check-in)", status: "Active", checklist: { notified: true, confirmed: true, reminder: false, done: false }, sameDayTurnaround: true },
-  { id: 2, guestName: "Marcus T.", guests: 4, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMEFGH5678", checkIn: "May 12", checkOut: "May 15", nights: 3, turnover: "Check-in 3pm May 12", status: "Upcoming", checklist: { notified: true, confirmed: true, reminder: false, done: false } },
-  { id: 3, guestName: "Priya R.", guests: 3, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMIJKL9012", checkIn: "May 17", checkOut: "May 21", nights: 4, turnover: "10am–3pm May 17", status: "Upcoming", checklist: { notified: true, confirmed: false, reminder: false, done: false } },
+  { id: 1, guestName: "Sarah K.", guests: 2, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMABCD1234", checkIn: "May 10", checkOut: "May 12", nights: 2, turnover: "11am–3pm May 12 (same-day check-in)", status: "Active", checklist: { notified: true, confirmed: true, reminder: false, done: false }, sameDayTurnaround: true, notes: "Late checkout requested — confirmed 11am." },
+  { id: 2, guestName: "Marcus T.", guests: 4, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMEFGH5678", checkIn: "May 12", checkOut: "May 15", nights: 3, turnover: "Check-in 3pm May 12", status: "Upcoming", checklist: { notified: true, confirmed: true, reminder: false, done: false }, notes: "" },
+  { id: 3, guestName: "Priya R.", guests: 3, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMIJKL9012", checkIn: "May 17", checkOut: "May 21", nights: 4, turnover: "10am–3pm May 17", status: "Upcoming", checklist: { notified: true, confirmed: false, reminder: false, done: false }, notes: "" },
 ];
 
 const gaps: Gap[] = [
@@ -114,7 +115,7 @@ function ChecklistStep({ label, complete, onClick }: { label: string; complete: 
   );
 }
 
-function BookingCard({ booking, onToggle }: { booking: Booking; onToggle: (key: ChecklistKey) => void }) {
+function BookingCard({ booking, onToggle, onNotesChange }: { booking: Booking; onToggle: (key: ChecklistKey) => void; onNotesChange: (notes: string) => void }) {
   const steps: { key: ChecklistKey; label: string }[] = [
     { key: "notified", label: "Notified" },
     { key: "confirmed", label: "Confirmed" },
@@ -140,7 +141,7 @@ function BookingCard({ booking, onToggle }: { booking: Booking; onToggle: (key: 
         <StatusBadge status={booking.status} />
       </div>
       <div style={{ fontSize: 13, color: "var(--color-text-primary)", marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <span>{booking.checkIn} → {booking.checkOut}</span>
+        <span>{booking.nights} {booking.nights === 1 ? "night" : "nights"} · {booking.checkIn} → {booking.checkOut}</span>
         <a
           href={booking.reservationUrl}
           target="_blank"
@@ -151,7 +152,7 @@ function BookingCard({ booking, onToggle }: { booking: Booking; onToggle: (key: 
         </a>
       </div>
       <div style={{ fontSize: 13, color: "var(--color-text-muted)", marginTop: 4 }}>
-        {booking.nights} nights · Turnover window: {booking.turnover}
+        Turnover window: {booking.turnover}
       </div>
       {booking.sameDayTurnaround && (
         <div style={{ fontSize: 12, color: "var(--color-warning)", marginTop: 4, fontWeight: 600 }}>
@@ -167,6 +168,32 @@ function BookingCard({ booking, onToggle }: { booking: Booking; onToggle: (key: 
             onClick={() => onToggle(s.key)}
           />
         ))}
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, color: "var(--color-text-muted)" }}>
+          Notes
+        </label>
+        <textarea
+          value={booking.notes}
+          onChange={(e) => onNotesChange(e.target.value)}
+          placeholder="Add a note for this reservation…"
+          rows={2}
+          style={{
+            display: "block",
+            width: "100%",
+            marginTop: 4,
+            padding: "8px 10px",
+            fontSize: 13,
+            fontFamily: "inherit",
+            color: "var(--color-text-primary)",
+            background: "var(--color-background-secondary)",
+            border: "0.5px solid var(--color-border-tertiary)",
+            borderRadius: 8,
+            resize: "vertical",
+            outline: "none",
+            boxSizing: "border-box",
+          }}
+        />
       </div>
     </div>
   );
@@ -241,6 +268,10 @@ function Index() {
     );
   };
 
+  const updateNotes = (id: number, notes: string) => {
+    setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, notes } : b)));
+  };
+
   return (
     <main style={{ minHeight: "100vh", background: "var(--color-background-primary)", padding: "2rem 1rem" }}>
       <h1 className="sr-only">Host Dashboard</h1>
@@ -249,16 +280,16 @@ function Index() {
 
         <section>
           <SectionHeader>Upcoming bookings</SectionHeader>
-          <p style={{ fontSize: 12, color: "var(--color-text-muted)", margin: "0 0 12px", lineHeight: 1.5 }}>
-            Standard check-in is 3pm.{" "}
-            <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Notified</strong>: cleaners have been told.{" "}
-            <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Confirmed</strong>: cleaner has agreed.{" "}
-            <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Reminder</strong>: follow-up sent 1–2 days before with checkout date and window.{" "}
-            <strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Done</strong>: turnover complete.
-          </p>
+          <ul style={{ fontSize: 12, color: "var(--color-text-muted)", margin: "0 0 12px", paddingLeft: 18, lineHeight: 1.6 }}>
+            <li>Standard check-in is 3pm.</li>
+            <li><strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Notified</strong>: cleaners have been told.</li>
+            <li><strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Confirmed</strong>: cleaner has agreed.</li>
+            <li><strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Reminder</strong>: follow-up sent 1–2 days before with checkout date and window.</li>
+            <li><strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Done</strong>: turnover complete.</li>
+          </ul>
           <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             {bookings.map((b) => (
-              <BookingCard key={b.id} booking={b} onToggle={(k) => toggle(b.id, k)} />
+              <BookingCard key={b.id} booking={b} onToggle={(k) => toggle(b.id, k)} onNotesChange={(n) => updateNotes(b.id, n)} />
             ))}
           </div>
         </section>
