@@ -32,11 +32,17 @@ The prompt is assembled by a pure function from `briefing-rules.json`. This make
 
 Components in `src/client/` use inline `style={{}}` with the dashboard tokens defined in `src/styles.css` (`--color-background-primary`, `--color-text-primary`, `--color-teal`, `--color-warning`, etc.). Do not bulk-scaffold shadcn/ui or migrate the dashboard to tailwind utility classes. If a complex primitive is needed (dialog, dropdown, command palette), add it explicitly via `npx shadcn add <name>` one component at a time and adapt it to the dashboard tokens. The shadcn token block in `styles.css` and the `.dark` block are kept only for the 404/error pages in `__root.tsx` — do not extend that system for new dashboard components.
 
+**Record non-obvious architectural decisions in the ROADMAP decision log.**
+
+When a choice resolves a real fork in the road — where the trade-offs aren't obvious from the code alone — add an entry to the Decision log section of `ROADMAP.md` with the choice, the why, and the date. Skip the routine; record what someone reading the code six months later would want to know.
+
 ## Working style
 
 **Confirm behavior changes before editing.** When the user describes a new behavior or UX rule, restate the proposed logic — including the edge cases you inferred — and wait for explicit go-ahead before changing code. Do not auto-implement on the assumption that "the logic is obvious"; small UX differences matter and are cheap to clarify in advance. A soft "going to implement unless you say otherwise" does not count as a confirmation step.
 
 Mechanical edits (renames, type updates, doc fixes, file moves the user has named) proceed without an extra confirmation step. The pause-and-confirm rule applies specifically to behavior changes — anything that changes what the user sees or how the app responds.
+
+**Explain before process management actions.** Before killing, restarting, or cleaning up background processes (dev servers, daemons, anything started with `run_in_background`), explain what the process is, where it's running, what happens if you act, and what happens if you don't — then wait for confirmation. Same pause-and-confirm shape as the behavior-change rule, applied to actions that affect running processes on the user's machine.
 
 ## Layer map
 
