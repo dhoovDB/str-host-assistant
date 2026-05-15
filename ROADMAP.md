@@ -228,3 +228,9 @@ A short record of architectural choices that aren't obvious from the code. Add e
 
 - **Gaps shown without pricing in v1.** The gaps table flags unbookable nights (gap length < min stay) based on `minStay` from `property.json`. No external pricing API. Why: the core insight is "you have a 2-night gap but 3-night minimum" — that's lost revenue regardless of the nightly rate. Knowing the gap exists is 80% of the value. Adding PriceLabs ($1/month API cost) before confirming the gaps table is actually useful daily is premature optimization. Wire PriceLabs in v2 if manually checking prices becomes a bottleneck.
 - **`minStay` lives in config, not fetched.** The property's minimum stay requirement is set once and changes infrequently. Treating it as config (committed, versioned) rather than live API data is the right tradeoff for v1. If min stay becomes dynamic (weekday vs weekend), revisit in v2.
+
+### 2026-05-15 — Real property config split from committed template
+
+- **What changed.** `config/property.json` is now gitignored. The committed file is `config/property.example.json` with the same schema and placeholder values. On a fresh checkout, copy the example to `config/property.json` and fill in real values before running.
+- **Why split.** Previously the same file was both "schema/template that lives in git" and "the file the validator reads at runtime with real values like the iCal URL." That asks the user to remember "edit locally, don't commit" — a fragile guarantee that depends on discipline rather than mechanism. Splitting them encodes the rule in git itself: the tracked file is the template, the runtime file is local-only.
+- **Same pattern as `.env`.** `.env.example` is committed; `.env` is gitignored. Property config now matches that established pattern, so contributors familiar with one find the other obvious.

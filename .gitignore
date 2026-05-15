@@ -21,6 +21,9 @@ dist-ssr
 .env.*
 !.env.example
 
+# Property config — real values are local-only, the example template is tracked
+config/property.json
+
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars

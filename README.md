@@ -45,5 +45,5 @@ Stack: TanStack Start (React + SSR on Cloudflare Workers), Supabase (Postgres + 
    ```
 2. Create a Supabase project, then run the schema SQL from [ROADMAP Task 2](./ROADMAP.md#task-2-supabase-and-property-config-setup-1-hour).
 3. Copy `.env.example` to `.env` and fill in `SUPABASE_URL`, `SUPABASE_KEY`, and a `PROPERTY_ID` (UUID).
-4. Edit `config/property.json` with your property name, cleaner name, and Google Calendar iCal feed URL.
+4. Copy `config/property.example.json` to `config/property.json`, then edit it with your property name, cleaner name, and Google Calendar iCal feed URL. (`config/property.json` is gitignored — your real values stay local.)
 5. `npm run dev` — the config validator refuses to start if `config/property.json` is invalid.
