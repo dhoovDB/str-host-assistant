@@ -38,10 +38,13 @@ Create `config/property.json` to hold non-secret property identity. Schema:
 {
   "propertyName": "Mountain Loft #1",
   "cleanerName": "Maria",
-  "icalUrl": "https://calendar.google.com/calendar/ical/.../basic.ics"
+  "icalUrl": "https://calendar.google.com/calendar/ical/.../basic.ics",
+  "minStay": 3
 }
 ```
-`icalUrl` will be consumed by Task 3, `cleanerName` by Task 7's prompt builder, `propertyName` for display. Treat the committed file as a placeholder template — real values are filled in per deployment. Validate schema on server startup; log error and refuse to start if `icalUrl` is missing or empty.
+`icalUrl` will be consumed by Task 3, `cleanerName` by Task 7's prompt builder, `propertyName` for display, `minStay` by Task 4's gaps engine. Treat the committed file as a placeholder template — real values are filled in per deployment. Validate schema on server startup:
+- `icalUrl` is required and must be non-empty; log error and refuse to start if missing or empty.
+- `minStay` must be a positive integer; log error and use default of `2` if missing or invalid.
 
 For v1, the server reads `PROPERTY_ID` from env (URL-based routing deferred to Task 9). The Supabase anon key is used with permissive RLS — security comes from URL secrecy + hard-to-guess property IDs.
 
@@ -55,31 +58,28 @@ Fetch 4-week rolling window from Google Calendar. Parse iCal format into booking
 
 Turnover window logic: checkout time to check-in time on consecutive bookings. Default: 10am checkout, 4pm check-in.
 
-Files: `src/api/gcal.js`, `src/engine/calendar.js`
+Files: `src/api/gcal.ts`, `src/engine/calendar.ts`
 
 ---
 
 ### Task 4: Gaps engine (~1 hour)
 
-Pure function. Input: sorted array of bookings. Output: array of gaps `{startDate, endDate, nights}`.
+Pure function `computeGaps(bookings, minStay)`. Inputs: sorted array of bookings, and the property's minimum stay. Output: array of gaps `{startDate, endDate, nights, flagged}`, where `flagged = gap.nights < minStay`.
+
+Note: `minStay` comes from `config/property.json`, not an external API. The caller reads the config and passes it in — keeps `computeGaps` pure.
 
 Unit test cases inline as comments:
 - Back-to-back bookings (no gap)
-- Single-night gap
-- Multi-night gap
-- Multiple gaps in the window
+- Single-night gap (flagged when `minStay > 1`)
+- Multi-night gap below minStay (flagged)
+- Multi-night gap at or above minStay (not flagged)
+- Multiple gaps in the window with mixed flags
 
 Files: `src/engine/gaps.js`
 
 ---
 
-### Task 5: PriceLabs integration (~1.5 hours)
-
-Fetch nightly prices and min stay settings for gap dates. Join to gaps output. Flag gaps where `gap.nights < minStay`.
-
-Note: PriceLabs API costs $1/listing/month. Confirm before wiring.
-
-Files: `src/api/pricelabs.js`
+### Task 5: Deferred to v2 (see v2 roadmap below)
 
 ---
 
@@ -131,11 +131,13 @@ Files: `src/client/Briefing.tsx`, `src/server/routes.js`
 
 Replace all mocked data with live data:
 - Bookings from Google Calendar
-- Gaps from gaps engine + PriceLabs pricing
+- Gaps from gaps engine (input: bookings + `minStay` from config)
 - Checklist state from Supabase
 - Briefing from Claude
 
 Connect checklist toggles to Supabase write. Wire notes textarea to debounced Supabase write — the `saving`/`saved` icon in `BookingCard` already exists with an 800ms timer; replace the timer-based reset with a transition that fires after `supabase.update()` resolves (and surfaces a third `error` state on failure). Confirm secret URL works across two browsers (different devices, same property_id).
+
+Confirm the dashboard works on mobile (test at 375px viewport width). Layout must remain functional on phone screens.
 
 Files: `src/client/App.jsx`, all components
 
@@ -156,7 +158,13 @@ Files: `README.md`
 
 ---
 
-## v2: Inventory Tracker
+## v2
+
+### PriceLabs Integration
+
+Fetch nightly prices for gap dates and display avg price per gap. Costs $1/listing/month. Wire this when manually checking PriceLabs becomes a daily bottleneck.
+
+### Inventory Tracker
 
 Checklist of restocking items (toilet paper, coffee, shampoo) that depletes after each turnover. Items below threshold surface automatically in the briefing and in the cleaner message on the booking card.
 
@@ -208,3 +216,15 @@ A short record of architectural choices that aren't obvious from the code. Add e
 - **Cloudflare production secrets deferred.** `.env.example` covers local dev only. Production env vars get set via `wrangler secret put` or the Cloudflare dashboard, handled in Task 10 (deploy docs) or first deploy.
 - **Permissive RLS on Supabase tables.** Anon key + `using (true)` policies — security comes from URL secrecy + hard-to-guess property IDs, not from RLS scoping. Why: matches the "no login for v1" architecture. Revisit if v2 adds auth.
 - **`.js` → `.ts` in CLAUDE.md layer map.** Project is TypeScript end-to-end; the original `.js` references were inconsistencies from the initial scaffold. Updated the whole layer map at once.
+
+### 2026-05-13 — iCal parsing hand-rolled, no library
+
+- **What iCal is.** iCal (also called ICS) is the text-based standard for exchanging calendar data — the format Google Calendar, Apple Calendar, and Airbnb all export. Each event ("VEVENT") is a few lines: a unique ID, a start date, an end date, a summary, and sometimes a description. Hosts download this file regularly to sync bookings into other tools; the dashboard does the same.
+- **The choice.** Use a library like `ical.js` (Mozilla's parser, ~50KB, covers the full spec including recurring events and time zones) versus writing ~80 lines of code that handle only what Airbnb actually emits.
+- **Chose hand-roll.** Airbnb's host export is consistent and simple: each VEVENT has UID, DTSTART, DTEND, and a SUMMARY of "Reserved." No recurring events, no time-zone wrangling (dates are date-only). The 80 lines of parsing live in `src/engine/calendar.ts` and are easier to read, debug, and change when an Airbnb format quirk shows up than the equivalent calls into a generic library. Adding a 50KB dependency for parsing we can spell out ourselves is dependency cost that doesn't pay back yet.
+- **Upgrade path.** If we ever need full iCal-spec support — recurring events, time-zone-aware times, multi-attendee invites — switch to `ical.js`. Until then, hand-rolled wins on transparency.
+
+### 2026-05-13 — PriceLabs deferred to v2
+
+- **Gaps shown without pricing in v1.** The gaps table flags unbookable nights (gap length < min stay) based on `minStay` from `property.json`. No external pricing API. Why: the core insight is "you have a 2-night gap but 3-night minimum" — that's lost revenue regardless of the nightly rate. Knowing the gap exists is 80% of the value. Adding PriceLabs ($1/month API cost) before confirming the gaps table is actually useful daily is premature optimization. Wire PriceLabs in v2 if manually checking prices becomes a bottleneck.
+- **`minStay` lives in config, not fetched.** The property's minimum stay requirement is set once and changes infrequently. Treating it as config (committed, versioned) rather than live API data is the right tradeoff for v1. If min stay becomes dynamic (weekday vs weekend), revisit in v2.

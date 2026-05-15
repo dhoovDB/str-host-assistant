@@ -18,7 +18,7 @@ Property-specific values live in `config/property.json`: property name, cleaner 
 
 **The API keys never touch the browser.**
 
-All external API calls (Claude, Google Calendar, PriceLabs) go through server-side routes. The frontend sends requests. The server loads config, calls the API, and returns results.
+All external API calls (Claude, Google Calendar) go through server-side routes. The frontend sends requests. The server loads config, calls the API, and returns results.
 
 **State lives in Supabase, not localStorage.**
 
@@ -55,7 +55,6 @@ src/engine/gaps.ts              ← compute open gaps between bookings (pure)
 src/engine/briefing.ts          ← buildPrompt from config + state (pure)
 src/api/claude.ts               ← Claude API call, isolated
 src/api/gcal.ts                 ← Google Calendar fetch, isolated
-src/api/pricelabs.ts            ← PriceLabs fetch, isolated
 src/db/supabase.ts              ← checklist + feedback read/write
 src/server/routes.ts            ← /api/bookings, /api/briefing, /api/checklist, /api/feedback
 src/client/                     ← React components: Briefing, BookingCard, Checklist, GapsTable
