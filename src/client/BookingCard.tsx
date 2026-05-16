@@ -52,7 +52,10 @@ export function BookingCard({ booking, onChecklistChange, onNotesChange }: { boo
           {booking.sameDayTurnaround && (
             <span title="Same-day turnaround" aria-label="Same-day turnaround alert">🚨</span>
           )}
-          {booking.guestName} · {booking.guests} {booking.guests === 1 ? "guest" : "guests"}
+          {/* Guest name / guest count hidden in v1 — Airbnb's iCal feed does not
+              expose names or party size. Restore this line when the Airbnb API
+              integration lands (v2+) or remove permanently if not pursued.
+              Original: {booking.guestName} · {booking.guests} {booking.guests === 1 ? "guest" : "guests"} */}
         </div>
         <StatusBadge status={booking.status} />
       </div>
@@ -72,7 +75,7 @@ export function BookingCard({ booking, onChecklistChange, onNotesChange }: { boo
       </div>
       {booking.sameDayTurnaround && (
         <div style={{ fontSize: 12, color: "var(--color-warning)", marginTop: 4, fontWeight: 600 }}>
-          Same-day turnaround — next guest checks in 3pm
+          Same-day turnaround — 10am–3pm cleaning window
         </div>
       )}
       <Checklist state={booking.checklist} onChange={onChecklistChange} />

@@ -1,11 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { Briefing } from "@/client/Briefing";
 import { BookingCard } from "@/client/BookingCard";
 import { GapsTable } from "@/client/GapsTable";
 import type { Booking, ChecklistKey, Gap } from "@/client/types";
+import { fetchBookings } from "@/api/gcal";
 
 const tablerCss = "https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css";
+
+// Server function: runs only on the SSR/server path. fetchBookings() reads
+// ICAL_URL from process.env, which is undefined in the browser — see
+// CLAUDE.md "Env reads must be lazy" + ROADMAP decision log 2026-05-16.
+const loadBookings = createServerFn({ method: "GET" }).handler(async () => {
+  return fetchBookings();
+});
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -15,15 +24,11 @@ export const Route = createFileRoute("/")({
     ],
     links: [{ rel: "stylesheet", href: tablerCss }],
   }),
+  loader: async () => ({ bookings: await loadBookings() }),
   component: Index,
 });
 
-const initialBookings: Booking[] = [
-  { id: "airbnb-HMABCD1234@google.com", guestName: "Sarah K.", guests: 2, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMABCD1234", checkIn: "2026-05-10", checkOut: "2026-05-12", nights: 2, turnover: "11am–3pm May 12 (same-day check-in)", status: "Active", checklist: { notified: true, confirmed: true, reminder: false, ready: false, checkedIn: true, checkedOut: false, reviewed: false }, sameDayTurnaround: true, notes: "Late checkout requested — confirmed 11am." },
-  { id: "airbnb-HMEFGH5678@google.com", guestName: "Marcus T.", guests: 4, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMEFGH5678", checkIn: "2026-05-12", checkOut: "2026-05-15", nights: 3, turnover: "Check-in 3pm May 12", status: "Upcoming", checklist: { notified: true, confirmed: true, reminder: false, ready: false, checkedIn: false, checkedOut: false, reviewed: false }, notes: "" },
-  { id: "airbnb-HMIJKL9012@google.com", guestName: "Priya R.", guests: 3, reservationUrl: "https://www.airbnb.com/hosting/reservations/details/HMIJKL9012", checkIn: "2026-05-17", checkOut: "2026-05-21", nights: 4, turnover: "10am–3pm May 17", status: "Upcoming", checklist: { notified: true, confirmed: false, reminder: false, ready: false, checkedIn: false, checkedOut: false, reviewed: false }, notes: "" },
-];
-
+// Gaps and briefing remain mocked until Tasks 4 (gaps engine) and 7 (Claude briefing).
 const gaps: Gap[] = [
   { dates: "May 12–13", nights: 1, price: "$145", flag: "Min stay 3" },
   { dates: "May 17–19", nights: 2, price: "$162", flag: "Min stay 3" },
@@ -43,6 +48,7 @@ function SectionHeader({ children }: { children: React.ReactNode }) {
 }
 
 function Index() {
+  const { bookings: initialBookings } = Route.useLoaderData();
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
 
   const updateChecklist = (id: string, next: Record<ChecklistKey, boolean>) => {
@@ -81,11 +87,17 @@ function Index() {
               <li><strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Reviewed</strong>: review submitted on the platform.</li>
             </ul>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-            {bookings.map((b) => (
-              <BookingCard key={b.id} booking={b} onChecklistChange={(next) => updateChecklist(b.id, next)} onNotesChange={(n) => updateNotes(b.id, n)} />
-            ))}
-          </div>
+          {bookings.length === 0 ? (
+            <div style={{ fontSize: 13, color: "var(--color-text-muted)", padding: "12px 0" }}>
+              No upcoming bookings in the next 4 weeks.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {bookings.map((b) => (
+                <BookingCard key={b.id} booking={b} onChecklistChange={(next) => updateChecklist(b.id, next)} onNotesChange={(n) => updateNotes(b.id, n)} />
+              ))}
+            </div>
+          )}
         </section>
 
         <section>

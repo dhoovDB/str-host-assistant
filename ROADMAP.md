@@ -52,11 +52,11 @@ Files: `src/db/supabase.ts`, `src/config/property.ts`, `config/property.json`, `
 
 ---
 
-### Task 3: Google Calendar integration (~1.5 hours)
+### Task 3: Google Calendar integration (complete)
 
 Fetch 4-week rolling window from Google Calendar. Parse iCal format into booking objects: `{id, checkIn, checkOut, nights, turnaroundWindow, reservationUrl}`.
 
-Turnover window logic: checkout time to check-in time on consecutive bookings. Default: 10am checkout, 4pm check-in.
+Turnover window logic: checkout time to check-in time on consecutive bookings. Default: 10am checkout, 3pm check-in (matching the "Standard check-in is 3pm" copy in the dashboard).
 
 Reservation URL extraction: Airbnb iCal UIDs are typically `airbnb-HMXXXXXXXX@airbnb.com` where `HMXXXXXXXX` is the confirmation code. Build `reservationUrl` as `https://www.airbnb.com/hosting/reservations/details/HMXXXXXXXX` so the "View on Airbnb" link on each card opens the specific reservation page. If the UID doesn't match the expected shape, fall back to the host calendar URL (`https://www.airbnb.com/hosting/calendar`) so the link still goes somewhere useful instead of breaking.
 
