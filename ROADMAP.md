@@ -8,7 +8,7 @@ A self-managed host tool that reduces coordination friction and catches revenue 
 
 ## v1: Dashboard with Daily Briefing (current focus)
 
-**Goal:** Open the dashboard and immediately know what's happening and what action is needed today. Show 4 weeks of upcoming bookings, surface unbookable gaps, track cleaner coordination progress.
+**Goal:** Open the dashboard and immediately know what's happening and what action is needed today. Render the 3 most immediate bookings as cards, surface unbookable gaps from a 4-week window, track cleaner coordination progress.
 
 **Done when:** A host can open the dashboard, read the briefing, see which bookings need cleaner confirmation, and identify revenue leaks from unbookable gaps — all in under 60 seconds.
 
@@ -54,9 +54,11 @@ Files: `src/db/supabase.ts`, `src/config/property.ts`, `config/property.json`, `
 
 ### Task 3: Google Calendar integration (~1.5 hours)
 
-Fetch 4-week rolling window from Google Calendar. Parse iCal format into booking objects: `{id, checkIn, checkOut, nights, turnaroundWindow}`.
+Fetch 4-week rolling window from Google Calendar. Parse iCal format into booking objects: `{id, checkIn, checkOut, nights, turnaroundWindow, reservationUrl}`.
 
 Turnover window logic: checkout time to check-in time on consecutive bookings. Default: 10am checkout, 4pm check-in.
+
+Reservation URL extraction: Airbnb iCal UIDs are typically `airbnb-HMXXXXXXXX@airbnb.com` where `HMXXXXXXXX` is the confirmation code. Build `reservationUrl` as `https://www.airbnb.com/hosting/reservations/details/HMXXXXXXXX` so the "View on Airbnb" link on each card opens the specific reservation page. If the UID doesn't match the expected shape, fall back to the host calendar URL (`https://www.airbnb.com/hosting/calendar`) so the link still goes somewhere useful instead of breaking.
 
 Files: `src/api/gcal.ts`, `src/engine/calendar.ts`
 
@@ -135,6 +137,11 @@ Replace all mocked data with live data:
 - Checklist state from Supabase
 - Briefing from Claude
 
+Card display rules:
+- Render only the 3 bookings closest to today (sorted by check-in date ascending; an active stay counts as one of the 3). Calendar fetch stays at 4 weeks so the gaps engine still sees the full window — display filtering is a render-time slice, not a fetch-time filter.
+- Hide a card when its `reviewed` checklist step is checked OR when ≥7 days have passed since checkout, whichever fires first. Hidden cards retain their data in Supabase — only the render is suppressed.
+- Hidden cards are surfaced again by the v2 history view; v1 has no UI to un-hide a card mid-cycle.
+
 Connect checklist toggles to Supabase write. Wire notes textarea to debounced Supabase write — the `saving`/`saved` icon in `BookingCard` already exists with an 800ms timer; replace the timer-based reset with a transition that fires after `supabase.update()` resolves (and surfaces a third `error` state on failure). Confirm secret URL works across two browsers (different devices, same property_id).
 
 Confirm the dashboard works on mobile (test at 375px viewport width). Layout must remain functional on phone screens.
@@ -169,6 +176,23 @@ Fetch nightly prices for gap dates and display avg price per gap. Costs $1/listi
 Checklist of restocking items (toilet paper, coffee, shampoo) that depletes after each turnover. Items below threshold surface automatically in the briefing and in the cleaner message on the booking card.
 
 Explore integration with TIDY for automatic inventory syncing if TIDY supports it.
+
+### History view
+
+Browse past stays, past briefings, past reviewed checklists. Rendered from the same Supabase tables that drive the live dashboard, just queried without the Task 9 lifecycle filter (hidden cards reappear here). Useful for: looking up "when did Sarah K. last stay here," reviewing what the AI briefing said on a past day, auditing whether checklist steps actually got completed.
+
+Coupling with Data Retention: history view shows up to the retention horizon. Beyond that, data is purged and history shows nothing. The two tasks should land in the same release or coordinate the horizon up front.
+
+### Data Retention
+
+Purge old `checklist_state`, `briefings`, and `briefing_feedback` rows after 12 months. Hard delete, not archive. Implement as a scheduled job (Supabase pg_cron or Cloudflare Workers cron trigger).
+
+Constraint: retention window must be longer than the briefing feedback review cadence (currently 2 weeks). 12 months satisfies this comfortably.
+
+Open questions to revisit when this task is actually started:
+- Is 12 months still the right horizon? Longer if the user wants more history; shorter if storage costs balloon.
+- Hard delete vs archive to cold storage / JSON dump? Decided "delete" up front; worth reconsidering if the data turns out to have long-term analytical value.
+- Property-level setting vs global default? Matters once multiple properties share a Supabase project.
 
 ### Automated tests
 
