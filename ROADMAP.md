@@ -239,6 +239,18 @@ This is the first write operation to an external system. Requires confirmation d
 
 ---
 
+## Developer tooling
+
+Cross-cutting workflow improvements that aren't tied to a feature version. Items here often live in other repos or external tools — this section is a reminder surface, not a backlog for code in this repo.
+
+### tanstack-start SKILL.md (in dhoovDB/claude-skills)
+
+Create a `tanstack-start` SKILL.md in `github.com/dhoovDB/claude-skills`. The skill should capture current best practices for TanStack Start: server functions, SSR routing, client/server component boundaries, and Cloudflare Workers deployment patterns. Trigger: any task involving TanStack Start routing, server functions, or SSR behavior.
+
+The work itself happens in the claude-skills repo, not here. This entry exists so the missing skill is visible the next time a TanStack Start task starts — at which point Claude should grep claude-skills for a matching SKILL.md per the global rules.
+
+---
+
 ## Decision log
 
 A short record of architectural choices that aren't obvious from the code. Add entries when the choice resolves a real fork in the road — skip the routine.
