@@ -38,10 +38,12 @@ function validate(raw: unknown): PropertyConfig {
   };
 }
 
-// Lazy env loader. Must be called only from server-only modules (e.g. the
-// iCal fetcher in src/api/gcal.ts). Eager evaluation would throw on the
+// Lazy env loaders. Must be called only from server-only modules
+// (src/api/*, src/db/*, src/server/*). Eager evaluation would throw on the
 // client, because Vite serves this module to the browser via the route tree
-// chain and process.env.ICAL_URL is undefined there.
+// chain and process.env.* is undefined there. See CLAUDE.md "Env reads must
+// be lazy" + ROADMAP decision log 2026-05-16.
+
 export function getIcalUrl(): string {
   const url = process.env.ICAL_URL ?? "";
   if (url.trim() === "") {
@@ -50,6 +52,26 @@ export function getIcalUrl(): string {
     );
   }
   return url;
+}
+
+export function getAnthropicApiKey(): string {
+  const key = process.env.ANTHROPIC_API_KEY ?? "";
+  if (key.trim() === "") {
+    throw new Error(
+      "ANTHROPIC_API_KEY missing. Set it in .env (local) or via `wrangler secret put ANTHROPIC_API_KEY` (production). See .env.example.",
+    );
+  }
+  return key;
+}
+
+export function getPropertyId(): string {
+  const id = process.env.PROPERTY_ID ?? "";
+  if (id.trim() === "") {
+    throw new Error(
+      "PROPERTY_ID missing. Set it in .env (local) or via `wrangler secret put PROPERTY_ID` (production). See .env.example.",
+    );
+  }
+  return id;
 }
 
 export const propertyConfig: PropertyConfig = validate(rawConfig);

@@ -1,0 +1,7 @@
+{
+  "includeTurnovers": true,
+  "includeGaps": true,
+  "gapFlagThreshold": 3,
+  "tone": "direct",
+  "customRules": []
+}

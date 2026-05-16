@@ -117,6 +117,22 @@ export async function createBriefing(input: {
   return data.id;
 }
 
+// Look up an existing briefing for a specific date — used by the daily-cache
+// pattern in the route loader so we don't burn a Claude API call per page load.
+export async function getBriefingByDate(
+  propertyId: string,
+  date: string,
+): Promise<BriefingRow | null> {
+  const { data, error } = await supabase
+    .from("briefings")
+    .select("*")
+    .eq("property_id", propertyId)
+    .eq("date", date)
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
 export async function getRecentBriefings(
   propertyId: string,
   limit = 30,

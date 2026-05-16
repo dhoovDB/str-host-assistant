@@ -85,7 +85,7 @@ Files: `src/engine/gaps.js`
 
 ---
 
-### Task 6: Briefing rules config (~1 hour)
+### Task 6: Briefing rules config (complete)
 
 Create `config/briefing-rules.json` schema:
 ```json
@@ -109,7 +109,7 @@ Files: `config/briefing-rules.json`, `config/README.md`
 
 ---
 
-### Task 7: Claude briefing (~1.5 hours)
+### Task 7: Claude briefing (complete)
 
 `buildPrompt(bookings, gaps, checklistState, briefingRules)` in `src/engine/briefing.js`. Returns prompt string. No API calls. Reads `briefing-rules.json` and injects rules into the prompt.
 
@@ -272,6 +272,11 @@ A short record of architectural choices that aren't obvious from the code. Add e
 - **`minStay` validation landed.** Task 2 specced it but the original commit shipped without it; folded in here while the validator was already being restructured. Positive integer, defaults to 2.
 - **Trigger.** Real-world: while filling in `property.json` for first deployment, a real Airbnb token briefly sat in the working tree before we caught it. The token has been rotated (read-only iCal, low blast radius — see chat history 2026-05-16).
 - **Server-side fail-fast deferred.** With the lazy loader, a missing `ICAL_URL` won't surface until the first iCal fetch runs in Task 3. Acceptable for v1 because nothing in Tasks 1–2 needs the URL. Revisit if we want a startup-time check that survives the client-bundle leak.
+
+### 2026-05-16 — Task 6 validation behavior
+
+- **`briefing-rules.json` falls back to defaults on invalid fields; `property.json` throws.** Asymmetric on purpose: a bad `property.json` means we can't identify the property (whose calendar to fetch, what cleaner to mention) — bail loudly so the misconfig surfaces immediately. A bad `briefing-rules.json` means tuning knobs are wrong — the briefing still generates with sensible defaults, the user sees odd output, edits the rules, and re-tries. Logging is per-field so one typo'd value doesn't silently affect the other knobs.
+- **Hand-rolled validation, no zod (still).** Five fields, all primitive types. Per decision log 2026-05-11 we revisit zod if validation gets non-trivial; this is still trivial. Adding a 50KB dep for `typeof x === "boolean"` checks isn't worth it.
 
 ### 2026-05-15 — Adopted task-discipline rules from a sibling CLAUDE.md
 
