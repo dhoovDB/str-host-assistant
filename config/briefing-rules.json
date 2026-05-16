@@ -3,5 +3,11 @@
   "includeGaps": true,
   "gapFlagThreshold": 3,
   "tone": "direct",
-  "customRules": []
+  "customRules": [
+    "Voice: write like a host texting a co-host. Plain and direct, not corporate or essay-like.",
+    "Punctuation: periods and commas only. No em-dashes (—), no en-dashes (–), no semicolons (;), no en-dash arrows for ranges.",
+    "Date ranges: write 'May 22 to May 25' or 'May 22, 23, 24'. Never 'May 22–25' or 'May 22-25'.",
+    "Avoid AI tells: no 'I notice that', 'It's worth noting', 'Notably,', 'It's important to', 'essentially', 'basically', 'simply', 'delve'. No passive voice in summaries. No parenthetical asides where a plain sentence works.",
+    "Don't title-case casual phrases. 'same-day turnover' not 'Same-Day Turnover'."
+  ]
 }
