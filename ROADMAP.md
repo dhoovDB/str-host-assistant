@@ -170,6 +170,18 @@ Checklist of restocking items (toilet paper, coffee, shampoo) that depletes afte
 
 Explore integration with TIDY for automatic inventory syncing if TIDY supports it.
 
+### Automated tests
+
+Add a test framework and a baseline test suite. v1 ships without these; the test surface is too small to justify the tooling commitment until v2 features start landing.
+
+Coverage targets:
+
+- **Hydration smoke test.** Open `/` in a headless browser, click a checklist step, assert the DOM state changed. Catches the bug class where SSR succeeds but client hydration silently fails — e.g. a top-level env read leaking into the client bundle via a type-import chain. Decision log 2026-05-16 is the canonical example: a one-line change in `src/config/property.ts` (`export const icalUrl = validateIcalUrl()`) broke every interactive component on the dashboard while the dev server, type checker, and SSR all reported clean. Diagnosed only after a user clicked a checkbox and nothing happened.
+- **Engine unit tests.** Pure functions in `src/engine/` (`parseCalendar`, `computeGaps`, `buildPrompt`) get input-output unit tests. Task 4 already has test cases sketched in comments — promote them to a real test file.
+- **Config validator tests.** Bad JSON shapes throw with the expected message; lazy env loaders return the expected value when env is set and throw with a clear message when not.
+
+Frameworks: Playwright for the smoke test, Vitest for unit tests. Run locally; CI later if we add it.
+
 ---
 
 ## v3: TIDY Integration (Cleaner Coordination)

@@ -32,6 +32,10 @@ The prompt is assembled by a pure function from `briefing-rules.json`. This make
 
 Components in `src/client/` use inline `style={{}}` with the dashboard tokens defined in `src/styles.css` (`--color-background-primary`, `--color-text-primary`, `--color-teal`, `--color-warning`, etc.). Do not bulk-scaffold shadcn/ui or migrate the dashboard to tailwind utility classes. If a complex primitive is needed (dialog, dropdown, command palette), add it explicitly via `npx shadcn add <name>` one component at a time and adapt it to the dashboard tokens. The shadcn token block in `styles.css` and the `.dark` block are kept only for the 404/error pages in `__root.tsx` — do not extend that system for new dashboard components.
 
+**Env reads must be lazy.**
+
+Access to `process.env.X` (or any env state) lives inside a function body, never at module top level. Expose secrets as named functions — e.g. `getIcalUrl()` in `src/config/property.ts` — and call them only from server-only files (`src/api/`, `src/db/`, `src/server/`). Reason: Vite's dev mode can serve server modules to the browser via type-import chains, and a top-level env read throws in the client (where `process.env` is undefined) before React can hydrate, leaving the page non-interactive. JSON validation at module top level is fine because the imported JSON travels with the module; env state does not. Canonical incident: ROADMAP decision log 2026-05-16.
+
 **Record non-obvious architectural decisions in the ROADMAP decision log.**
 
 When a choice resolves a real fork in the road — where the trade-offs aren't obvious from the code alone — add an entry to the Decision log section of `ROADMAP.md` with the choice, the why, and the date. Skip the routine; record what someone reading the code six months later would want to know.
@@ -46,9 +50,17 @@ Mechanical edits (renames, type updates, doc fixes, file moves the user has name
 
 **Feedback and planning mode.** Phrases like "add this to the roadmap," "for the backlog," "I'm thinking about," "FYI," "note that," "consider X" signal planning input, not a directive. Acknowledge in one sentence, note the input where appropriate (memory, ROADMAP planning, decision log), and wait. Only act when you hear an explicit instruction to proceed — see the approval-phrasing rule below.
 
+**Surface adjacent considerations during planning.** When the user is brainstorming or capturing roadmap items, proactively flag adjacent things they haven't raised yet — natural follow-ons, hidden dependencies, implications their stated change makes likely. Phrase as candidate items, not decisions ("worth flagging: you'll probably want X"). The goal is to make implicit scope visible at the planning stage when it's cheap to accept or reject, not to expand scope unilaterally. Example: a data-retention proposal implies the need for a history view; flagging it during planning surfaced a real item the literal request wouldn't have produced.
+
 **Batch feedback before acting.** When multiple pieces of feedback or items land in succession, accumulate them. Before doing anything, summarize what you heard as a numbered list and ask "ready to proceed with all of these?" Wait for confirmation before touching any file.
 
 **Approval phrasing is specific.** "Sounds good," "OK," "yeah," "interesting" — not approval. "Go ahead," "commit it," "make those changes," "do it," "approved" — approval. When in doubt, ask one clarifying question rather than guess.
+
+## Verification
+
+Before reporting a task as done, exercise it in the browser when changes touch React components, routes, styles, the server entry (`start.ts`, `server.ts`), config loaders (`src/config/`), or anything imported by them. SSR/hydration breaks silently — the server can return 200 OK with valid HTML while the client fails to attach React event handlers, leaving the page non-interactive. Dev-server boot and `tsc` tell you the code compiles; they do not tell you the dashboard works. Open the URL, click something, type something. ROADMAP decision log 2026-05-16 documents the canonical example: a config-layer change broke every interactive component on the page while the dev server reported no errors.
+
+**When asking the user to validate visually, provide a numbered checklist of exactly what to confirm** — e.g. "click a checklist step → should toggle green," "type in notes → spinner appears for ~800ms, then settles back to the check icon," "thumbs up/down on briefing → grey out after one click." Do not say "try it and see." List the specific observable behaviors the change should produce so the user can match expectations to reality and report mismatches fast. A vague ask gets a vague answer; a checklist gets a useful one.
 
 ## Status reporting
 
