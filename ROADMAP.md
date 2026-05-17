@@ -2,15 +2,17 @@
 
 ## What this builds toward
 
-A self-managed host tool that reduces coordination friction and catches revenue leaks before they cost you bookings. v1 is a dashboard that answers "what needs my attention today." v4 is a fully integrated operations platform with TIDY job automation.
+Self-managed short-term rental hosts shouldn't have to choose between running their property like a small business and burning out on the coordination overhead. This dashboard exists so a host can start each day knowing which bookings need action and where revenue is leaking — without holding the whole operation in their head.
+
+Each phase tightens that loop. v1 surfaces the daily picture and flags unbookable gaps before they cost a booking. v4 absorbs cleaner scheduling and maintenance tracking, so the operations loop runs through the system instead of through the host's working memory.
 
 ---
 
 ## v1: Dashboard with Daily Briefing (current focus)
 
-**Goal:** Open the dashboard and immediately know what's happening and what action is needed today. Render the 3 most immediate bookings as cards, surface unbookable gaps from a 4-week window, track cleaner coordination progress.
+**Goal:** A host opens the dashboard once a day and walks away in under a minute knowing what needs their attention, what to confirm with their cleaner, and where revenue is leaking.
 
-**Done when:** A host can open the dashboard, read the briefing, see which bookings need cleaner confirmation, and identify revenue leaks from unbookable gaps — all in under 60 seconds.
+**Done when:** A host can replace their daily cross-referencing across Airbnb, their calendar, and their own head with a single 60-second glance at this dashboard — and trusts the result enough to actually stop the cross-referencing.
 
 ---
 
