@@ -45,7 +45,7 @@ Stack: TanStack Start (React + SSR on Cloudflare Workers), Supabase (Postgres + 
    cd str-assistant-dashboard
    npm install
    ```
-2. Create a Supabase project, then run the schema SQL from [ROADMAP Task 2](./ROADMAP.md#task-2-supabase-and-property-config-setup-1-hour).
+2. Create a Supabase project, then run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL editor to create the four tables (`checklist_state`, `briefings`, `briefing_feedback`, `booking_notes`) with permissive RLS. The schema rationale lives in [ROADMAP Task 2](./ROADMAP.md#task-2-supabase-and-property-config-setup-1-hour) and the [decision log entry on RLS](./ROADMAP.md#decision-log).
 3. Copy `.env.example` to `.env` and fill in `SUPABASE_URL`, `SUPABASE_KEY`, and a `PROPERTY_ID` (UUID).
 4. Edit `config/property.json` with your property name, cleaner name, and Google Calendar iCal feed URL.
 5. `npm run dev` — the config validator refuses to start if `config/property.json` is invalid.

@@ -131,7 +131,7 @@ Files: `src/client/Briefing.tsx`, `src/server/routes.js`
 
 ---
 
-### Task 9: Wire everything (~2 hours)
+### Task 9: Wire everything (complete)
 
 Replace all mocked data with live data:
 - Bookings from Google Calendar
@@ -207,6 +207,21 @@ Coverage targets:
 - **Config validator tests.** Bad JSON shapes throw with the expected message; lazy env loaders return the expected value when env is set and throw with a clear message when not.
 
 Frameworks: Playwright for the smoke test, Vitest for unit tests. Run locally; CI later if we add it.
+
+### URL-based property routing
+
+v1 reads `PROPERTY_ID` from env, which means each property needs its own deployment (or a manual env swap before serving a different property). This is fine for a single property — the deployment URL itself is the secret. It becomes a friction point as soon as a second property comes online.
+
+Replace with a path-based scheme: `/<property_id>` is the property's secret URL. The server reads the property_id from the route param instead of env. RLS policies stay permissive — security still comes from URL secrecy + hard-to-guess IDs (per decision log 2026-05-11), just routed differently rather than per-deployment.
+
+Implementation outline:
+
+- TanStack Router dynamic route `/$propertyId`.
+- `getPropertyId()` becomes a function of the route context, not env.
+- Existing tables (`briefings`, `checklist_state`, `booking_notes`, `briefing_feedback` via `briefings.property_id`) are already keyed by `property_id` — no schema change needed.
+- v1 env-based path can stay as a deprecated fallback for the first property, or get removed once URL-routing is the only entry point.
+
+This was originally scoped into Task 9 (decision log 2026-05-11 noted "URL-in-path scheme is part of wire everything"). It was deferred when Task 9 landed because env-based routing covered the single-property reality and the spec line "Confirm secret URL works across two browsers (different devices, same property_id)" was satisfied by sharing the same deployment URL across devices on the same WiFi. Multi-property routing remained unbuilt and is captured here as the v2 unlock.
 
 ### Briefing feedback enhancements
 

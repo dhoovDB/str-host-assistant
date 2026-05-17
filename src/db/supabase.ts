@@ -95,6 +95,50 @@ function reduceChecklistRows(
   return out;
 }
 
+// --- booking_notes ---------------------------------------------------------
+
+export type BookingNoteRow = {
+  property_id: string;
+  booking_id: string;
+  notes: string;
+  updated_at: string;
+};
+
+// Read the note for one booking. Returns "" if no row exists — same default
+// as a fresh booking, so the caller doesn't have to distinguish.
+export async function getBookingNote(
+  propertyId: string,
+  bookingId: string,
+): Promise<string> {
+  const { data, error } = await supabase
+    .from("booking_notes")
+    .select("notes")
+    .eq("property_id", propertyId)
+    .eq("booking_id", bookingId)
+    .maybeSingle();
+  if (error) throw error;
+  return data?.notes ?? "";
+}
+
+export async function upsertBookingNote(
+  propertyId: string,
+  bookingId: string,
+  notes: string,
+): Promise<void> {
+  const { error } = await supabase
+    .from("booking_notes")
+    .upsert(
+      {
+        property_id: propertyId,
+        booking_id: bookingId,
+        notes,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: "property_id,booking_id" },
+    );
+  if (error) throw error;
+}
+
 // --- briefings -------------------------------------------------------------
 
 export async function createBriefing(input: {

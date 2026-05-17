@@ -12,7 +12,15 @@ import { computeGaps } from "@/engine/gaps";
 import { buildPrompt } from "@/engine/briefing";
 import { propertyConfig, getPropertyId } from "@/config/property";
 import { briefingRules } from "@/config/briefing-rules";
-import { createBriefing, getBriefingByDate, recordFeedback } from "@/db/supabase";
+import {
+  createBriefing,
+  getBriefingByDate,
+  recordFeedback,
+  getChecklistState,
+  upsertChecklist,
+  getBookingNote,
+  upsertBookingNote,
+} from "@/db/supabase";
 
 const tablerCss = "https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css";
 
@@ -28,8 +36,24 @@ const tablerCss = "https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dis
 // the briefings table can grow a UNIQUE(property_id, date) constraint
 // if it becomes an issue.
 const loadDashboardData = createServerFn({ method: "GET" }).handler(async () => {
-  const bookings = await fetchBookings();
-  const rawGaps = computeGaps(bookings, propertyConfig.minStay);
+  const rawBookings = await fetchBookings();
+  const propertyId = getPropertyId();
+
+  // Hydrate each booking with its Supabase-persisted checklist state and notes.
+  // Parallel per-booking fetches — for ~4 bookings this is ~8 round trips, fine
+  // for v1. If the booking count grows, switch to batch queries (one IN-clause
+  // call for all bookings instead of N×2 calls).
+  const enrichedBookings = await Promise.all(
+    rawBookings.map(async (b) => {
+      const [checklist, notes] = await Promise.all([
+        getChecklistState(propertyId, b.id),
+        getBookingNote(propertyId, b.id),
+      ]);
+      return { ...b, checklist, notes };
+    }),
+  );
+
+  const rawGaps = computeGaps(rawBookings, propertyConfig.minStay);
   const gaps: Gap[] = rawGaps.map((g) => ({
     dates: `${formatDate(g.startDate)}–${formatDate(g.endDate)}`,
     nights: g.nights,
@@ -37,16 +61,20 @@ const loadDashboardData = createServerFn({ method: "GET" }).handler(async () => 
     flag: g.flagged ? `Min stay ${propertyConfig.minStay}` : "",
   }));
 
+  // Build the per-booking checklist map for buildPrompt (separate parameter from
+  // the bookings list so the engine layer doesn't depend on the hydrated shape).
+  const checklistByBookingId: Record<string, Record<ChecklistKey, boolean>> = {};
+  for (const b of enrichedBookings) {
+    checklistByBookingId[b.id] = b.checklist;
+  }
+
   const today = new Date().toISOString().slice(0, 10);
-  const propertyId = getPropertyId();
   let briefingRow = await getBriefingByDate(propertyId, today);
   if (!briefingRow) {
     const prompt = buildPrompt({
-      bookings,
+      bookings: rawBookings,
       gaps: rawGaps,
-      // Checklist state stays empty until Task 9 wires it from Supabase. The
-      // prompt builder gracefully omits the section when state is empty.
-      checklistState: {},
+      checklistState: checklistByBookingId,
       rules: briefingRules,
       propertyName: propertyConfig.propertyName,
       cleanerName: propertyConfig.cleanerName,
@@ -58,7 +86,7 @@ const loadDashboardData = createServerFn({ method: "GET" }).handler(async () => 
     // v2 feedback-review UI / v6 auto-tuner queries old briefings, they need to
     // know which rules produced each one — a thumbs-down briefing generated under
     // an old rule set is a different signal than one under the current rules.
-    const context = { bookings, gaps: rawGaps, rules: briefingRules };
+    const context = { bookings: rawBookings, gaps: rawGaps, rules: briefingRules };
     const id = await createBriefing({
       propertyId,
       date: today,
@@ -75,12 +103,53 @@ const loadDashboardData = createServerFn({ method: "GET" }).handler(async () => 
     };
   }
 
+  // Card display rules per ROADMAP Task 9:
+  // - Hide if the booking's `reviewed` step is checked.
+  // - Hide if ≥7 days have passed since checkout. (Forward-compat — given
+  //   parseCalendar's current `checkOut >= today` filter, nothing in
+  //   enrichedBookings is ever past checkout today, so this branch is dead
+  //   code at v1. Kept so the rule survives a future fetch-window widening.)
+  // - Sort by check-in ascending (already done by parseCalendar).
+  // - Take the first 3 surviving bookings.
+  // Gaps engine sees all rawBookings (full window) — display filtering is a
+  // render-time slice, not a fetch-time filter (ROADMAP decision 2026-05-16).
+  const todayMs = Date.parse(today + "T00:00:00Z");
+  const displayedBookings = enrichedBookings
+    .filter((b) => {
+      if (b.checklist.reviewed) return false;
+      const daysPostCheckout =
+        (todayMs - Date.parse(b.checkOut + "T00:00:00Z")) / (24 * 60 * 60 * 1000);
+      return daysPostCheckout < 7;
+    })
+    .slice(0, 3);
+
   return {
-    bookings,
+    bookings: displayedBookings,
     gaps,
     briefing: { id: briefingRow.id, text: briefingRow.text },
   };
 });
+
+// Server functions for Task 9 persistence. Both wrap supabase.ts helpers and
+// run server-side (Supabase env reads stay off the client). Called from Index()
+// callbacks: checklist toggle is fire-and-forget (no save indicator on the
+// buttons themselves), notes write is awaited by BookingCard so its
+// saving/saved/error icon reflects the actual write status.
+const submitChecklistUpdate = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: { bookingId: string; state: Record<ChecklistKey, boolean> }) => data,
+  )
+  .handler(async ({ data }) => {
+    const propertyId = getPropertyId();
+    await upsertChecklist(propertyId, data.bookingId, data.state);
+  });
+
+const submitNotesUpdate = createServerFn({ method: "POST" })
+  .inputValidator((data: { bookingId: string; notes: string }) => data)
+  .handler(async ({ data }) => {
+    const propertyId = getPropertyId();
+    await upsertBookingNote(propertyId, data.bookingId, data.notes);
+  });
 
 // Server function for the thumbs vote. Runs only on the server (recordFeedback
 // reads Supabase env via the supabase.ts module-load env reads). Called from
@@ -116,12 +185,21 @@ function Index() {
   const { bookings: initialBookings, gaps, briefing } = Route.useLoaderData();
   const [bookings, setBookings] = useState<Booking[]>(initialBookings);
 
+  // Checklist write: optimistic local update + fire-and-forget Supabase write.
+  // No save indicator on the buttons themselves; if the write fails, the next
+  // page load will show the persisted (older) state and the user can re-toggle.
   const updateChecklist = (id: string, next: Record<ChecklistKey, boolean>) => {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, checklist: next } : b)));
+    submitChecklistUpdate({ data: { bookingId: id, state: next } }).catch((err) =>
+      console.error("Checklist write failed:", err),
+    );
   };
 
-  const updateNotes = (id: string, notes: string) => {
+  // Notes write: optimistic local update + awaited Supabase write. BookingCard
+  // awaits the returned promise to drive its saving/saved/error icon state.
+  const updateNotes = async (id: string, notes: string): Promise<void> => {
     setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, notes } : b)));
+    await submitNotesUpdate({ data: { bookingId: id, notes } });
   };
 
   return (

@@ -21,22 +21,71 @@ function StatusBadge({ status }: { status: Booking["status"] }) {
   );
 }
 
-export function BookingCard({ booking, onChecklistChange, onNotesChange }: { booking: Booking; onChecklistChange: (next: Record<ChecklistKey, boolean>) => void; onNotesChange: (notes: string) => void }) {
-  const [savedStatus, setSavedStatus] = useState<"saved" | "saving">("saved");
+type SaveStatus = "saved" | "saving" | "error";
+
+export function BookingCard({
+  booking,
+  onChecklistChange,
+  onNotesChange,
+}: {
+  booking: Booking;
+  onChecklistChange: (next: Record<ChecklistKey, boolean>) => void;
+  onNotesChange: (notes: string) => Promise<void>;
+}) {
+  // Local textarea state so typing is responsive — parent state only updates
+  // after the debounce fires. If `booking.notes` changes externally (cross-
+  // device update visible on next refresh), the effect below resyncs.
+  const [localNotes, setLocalNotes] = useState(booking.notes);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("saved");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Save-generation counter prevents "saved → saving → saved" flicker when
+  // typing fast: only the latest save's resolution updates the visible
+  // status. Older in-flight awaits are ignored.
+  const saveGen = useRef(0);
+
+  useEffect(() => {
+    setLocalNotes(booking.notes);
+  }, [booking.notes]);
+
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   const handleNotesChange = (notes: string) => {
-    onNotesChange(notes);
-    setSavedStatus("saving");
+    setLocalNotes(notes);
+    setSaveStatus("saving");
     if (timer.current) clearTimeout(timer.current);
-    timer.current = setTimeout(() => setSavedStatus("saved"), 800);
+    const myGen = ++saveGen.current;
+    timer.current = setTimeout(async () => {
+      try {
+        await onNotesChange(notes);
+        if (saveGen.current === myGen) setSaveStatus("saved");
+      } catch (err) {
+        console.error("Notes write failed:", err);
+        if (saveGen.current === myGen) setSaveStatus("error");
+      }
+    }, 1000);
   };
 
-  useEffect(() => () => {
-    if (timer.current) clearTimeout(timer.current);
-  }, []);
-
-  const isSaving = savedStatus === "saving";
+  const iconClass =
+    saveStatus === "saving"
+      ? "ti ti-loader-2"
+      : saveStatus === "error"
+        ? "ti ti-alert-triangle"
+        : "ti ti-check";
+  const iconColor =
+    saveStatus === "error" ? "var(--color-warning)" : "var(--color-text-muted)";
+  const iconLabel =
+    saveStatus === "saving" ? "Saving" : saveStatus === "error" ? "Save failed" : "Saved";
+  const iconTitle =
+    saveStatus === "saving"
+      ? "Saving…"
+      : saveStatus === "error"
+        ? "Save failed. Keep typing to retry."
+        : "Saved";
 
   return (
     <div
@@ -83,20 +132,20 @@ export function BookingCard({ booking, onChecklistChange, onNotesChange }: { boo
         <label style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", fontWeight: 600, color: "var(--color-text-muted)" }}>
           Notes
           <i
-            className={isSaving ? "ti ti-loader-2" : "ti ti-check"}
+            className={iconClass}
             style={{
               marginLeft: 6,
               fontSize: 12,
-              color: "var(--color-text-muted)",
+              color: iconColor,
               display: "inline-block",
-              animation: isSaving ? "spin 1s linear infinite" : undefined,
+              animation: saveStatus === "saving" ? "spin 1s linear infinite" : undefined,
             }}
-            aria-label={isSaving ? "Saving" : "Saved"}
-            title={isSaving ? "Saving…" : "Saved"}
+            aria-label={iconLabel}
+            title={iconTitle}
           />
         </label>
         <textarea
-          value={booking.notes}
+          value={localNotes}
           onChange={(e) => handleNotesChange(e.target.value)}
           placeholder="Add a note for this reservation…"
           rows={2}
