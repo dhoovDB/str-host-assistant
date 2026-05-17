@@ -169,9 +169,25 @@ Files: `README.md`
 
 ## v2
 
-### PriceLabs Integration
+### PriceLabs Integration via MCP
 
-Fetch nightly prices for gap dates and display avg price per gap. Costs $1/listing/month. Wire this when manually checking PriceLabs becomes a daily bottleneck.
+Use the PriceLabs MCP server (10 tools, community-maintained) instead of building a custom REST API integration. Connect the MCP server to the dashboard backend and call MCP tools directly to fetch nightly prices and min stay settings for gap dates.
+
+Benefits over custom API integration:
+- No API client code to write or maintain
+- MCP handles authentication and connection management
+- Tools are already defined and tested
+- Same $1/listing/month API cost applies
+
+Setup:
+1. Install the PriceLabs MCP server via npm
+2. Configure with PriceLabs API key in env
+3. Call MCP tools from server routes (not the gaps engine — keep it pure)
+4. Display avg price per gap in the gaps table
+
+Wire this when manually checking PriceLabs for gap pricing becomes a daily bottleneck. The dashboard should work well without pricing data first — confirm the gaps table is useful before adding this layer.
+
+Alternative: If the PriceLabs MCP server is unmaintained or broken when you reach v2, fall back to the REST API integration. Check the server's GitHub repo for recent activity before committing to MCP.
 
 ### Inventory Tracker
 
