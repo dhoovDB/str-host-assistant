@@ -14,6 +14,10 @@ Each phase tightens that loop. v1 surfaces the daily picture and flags unbookabl
 
 **Done when:** A host can replace their daily cross-referencing across Airbnb, their calendar, and their own head with a single 60-second glance at this dashboard — and trusts the result enough to actually stop the cross-referencing.
 
+**v1 close gates (one-off, must both pass before declaring v1 shipped):**
+- **Demo To Wife.** The co-host (the dashboard's actual second user) loads the URL on her own phone, uses it without coaching, and confirms it's useful. A dashboard that needs translation by its author has not replaced the cross-referencing it was supposed to eliminate.
+- **Screenshot in README.** A real-data screenshot of the running dashboard is committed at `docs/dashboard.png` and embedded near the top of `README.md`.
+
 ---
 
 ### Task 1: Lovable UI shell (complete)
@@ -152,18 +156,11 @@ Files: `src/client/App.jsx`, all components
 
 ---
 
-### Task 10: Documentation (~1 hour)
+### Task 10: Documentation (complete)
 
-CLAUDE.md (done), ROADMAP.md (this file), README.md.
+README.md fixed where it had drifted from the decision log: layer map no longer claims iCal URL lives in `config/property.json`; local-setup env-var list is complete (`ICAL_URL`, `ANTHROPIC_API_KEY` added, UUID claim for `PROPERTY_ID` dropped); step 4 stops calling the feed Google-Calendar-specific. Screenshot embedded near the top of the README per v1 close gate.
 
-README covers:
-- What it is (one sentence)
-- How to run locally (install, env vars, `npm run dev`)
-- How to configure `config/property.json` and `config/briefing-rules.json`
-- Screenshot of the dashboard
-- No marketing copy
-
-Files: `README.md`
+Files: `README.md`, `ROADMAP.md`
 
 ---
 
