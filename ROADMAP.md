@@ -164,6 +164,18 @@ Files: `README.md`, `ROADMAP.md`
 
 ---
 
+### Task 11: Deploy to Cloudflare Workers (complete)
+
+First production deploy. The app ships as a single Worker — SSR, server functions, and static assets in one deployment — built by Vite and deployed with `wrangler`. Production secrets (`SUPABASE_URL`, `SUPABASE_KEY`, `ICAL_URL`, `ANTHROPIC_API_KEY`, `PROPERTY_ID`) are set via `wrangler secret put`; Cloudflare injects them into the Worker runtime where `nodejs_compat` exposes them on `process.env`. `.env` stays local-dev only.
+
+Deploy command: `npm run deploy` → `vite build && wrangler deploy -c dist/server/wrangler.json`.
+
+This unblocks the v1 close gate **"Demo To Wife"** — the co-host can load the secret URL from her own phone over cellular, not just a shared same-WiFi address. The deployed `*.workers.dev` URL is the access credential (no login, permissive RLS) and is kept out of the repo.
+
+Files: `wrangler.jsonc`, `package.json`, `README.md`, `.env.example`
+
+---
+
 ## v2
 
 ### PriceLabs Integration via MCP
@@ -361,3 +373,10 @@ A short record of architectural choices that aren't obvious from the code. Add e
 - Added Status Reporting (mandatory end-of-task block), Definition of done, three new Working style bullets (feedback/planning mode, batching, approval phrasing), and Git commit practices to `CLAUDE.md`.
 - Why: a sibling project's `CLAUDE.md` showed these conventions in action; adopting them tightens "what state is the work in" reporting and prevents bundling unrelated changes into one commit.
 - Deliberately left out: 4D framework definitions inline (those live in the README for human readers), "Adding a new X" runbook sections (premature for v1), and separate voice/writing guidance (no surfaces that need it yet).
+
+### 2026-05-22 — First production deploy (Cloudflare Workers)
+
+- **Deploy the built output, not source.** `npm run deploy` runs `vite build` then `wrangler deploy -c dist/server/wrangler.json`. The `@cloudflare/vite-plugin` emits a generated `dist/server/wrangler.json` whose `main` is the built worker entry (`index.js`, `no_bundle: true`) with assets resolving to `dist/client`. The root `wrangler.jsonc` `main: src/server.ts` is the pre-build source the Vite plugin consumes — deploying the root config directly would bypass the Vite build and ship unbuilt source. Hence the explicit `-c` flag pointing at the generated config.
+- **Secrets via `wrangler secret put`, populated onto `process.env` at runtime.** This retires the open worry from decision log 2026-05-16 about whether the lazy `process.env` getters would resolve on Workers. Confirmed live: the SSR'd home page returned a real Claude briefing on first load, which only happens if `getIcalUrl()`, `getAnthropicApiKey()`, `getPropertyId()`, and the Supabase env reads all resolved in the Worker runtime. `nodejs_compat` + compat date 2025-09-24 auto-populates `process.env` from the secrets; no code change was needed.
+- **The live URL is a credential and stays out of the repo.** v1 security is URL secrecy + permissive RLS (no login). Committing the `*.workers.dev` address to a public repo would defeat it, so it's shared privately. README documents the deploy *process* with a `<worker-name>.<subdomain>` placeholder, never the real address.
+- **Deferred:** custom domain (a `*.workers.dev` URL is enough for the wife demo), and a CI deploy step (deploys are manual `npm run deploy` for now — fine for a single maintainer).

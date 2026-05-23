@@ -52,3 +52,28 @@ Stack: TanStack Start (React + SSR on Cloudflare Workers), Supabase (Postgres + 
 3. Copy `.env.example` to `.env` and fill in `SUPABASE_URL`, `SUPABASE_KEY`, `PROPERTY_ID` (any non-empty string — used as the key for this property's rows in Supabase), `ICAL_URL` (an Airbnb host export URL or any iCal feed), and `ANTHROPIC_API_KEY`. The iCal URL is a credential and stays in `.env` — never in `config/property.json` (see [decision log 2026-05-16](./ROADMAP.md#2026-05-16--ical-url-moved-to-env-minstay-validation-added)).
 4. Edit `config/property.json` with your property name, cleaner name, and minimum stay.
 5. `npm run dev` — the config validator refuses to start if `config/property.json` is invalid.
+
+## Deploy (Cloudflare Workers)
+
+The app ships as a single Cloudflare Worker — SSR, server functions, and static assets in one deployment. Vite produces the build; `wrangler` deploys it.
+
+First-time setup:
+
+1. `npx wrangler login` — authenticate with your Cloudflare account.
+2. Set production secrets. These are **not** read from `.env` in production — Cloudflare injects them into the Worker runtime, where `nodejs_compat` exposes them on `process.env`:
+   ```
+   npx wrangler secret put SUPABASE_URL
+   npx wrangler secret put SUPABASE_KEY
+   npx wrangler secret put ICAL_URL
+   npx wrangler secret put ANTHROPIC_API_KEY
+   npx wrangler secret put PROPERTY_ID
+   ```
+3. Set the worker `name` in `wrangler.jsonc`, and pick a `workers.dev` subdomain when prompted on first deploy.
+
+Deploy (and every redeploy):
+```
+npm run deploy
+```
+This runs `vite build` then `wrangler deploy -c dist/server/wrangler.json`. The generated `dist/server/wrangler.json` points at the built worker entry; the root `wrangler.jsonc` `main` is the pre-build source the Vite plugin reads, so it isn't the deploy target (see [decision log 2026-05-22](./ROADMAP.md#decision-log)).
+
+The deployed URL — `https://<worker-name>.<subdomain>.workers.dev` — is itself the access credential. v1 has no login: security comes from URL secrecy + permissive RLS. For that reason the live URL is shared privately and is **not** committed to this repo.
