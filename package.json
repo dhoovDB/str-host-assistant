@@ -8,6 +8,7 @@
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "deploy": "npm run build && wrangler deploy -c dist/server/wrangler.json",
+    "deploy:demo": "npm run build && wrangler deploy --name str-host-dashboard-demo -c dist/server/wrangler.json --var DEMO_MODE:true",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write ."
