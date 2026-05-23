@@ -8,7 +8,7 @@ Each phase tightens that loop. v1 surfaces the daily picture and flags unbookabl
 
 ---
 
-## v1: Dashboard with Daily Briefing (current focus)
+## v1: Dashboard with Daily Briefing — ✅ SHIPPED (2026-05-22)
 
 **Goal:** A host opens the dashboard once a day and walks away in under a minute knowing what needs their attention, what to confirm with their cleaner, and where revenue is leaking.
 
@@ -16,7 +16,7 @@ Each phase tightens that loop. v1 surfaces the daily picture and flags unbookabl
 
 **v1 close gates (one-off, must both pass before declaring v1 shipped):**
 - **Demo To Wife — ✅ PASSED (2026-05-22).** The co-host (the dashboard's actual second user) loaded the live Cloudflare URL on her own phone and used it without coaching — a booming success. It replaced the cross-referencing it was meant to eliminate without needing translation by its author. Hydration/persistence confirmed in the same session (toggle a checklist step → reload → state survives).
-- **Screenshot in README — pending.** A real-data screenshot of the running dashboard committed at `docs/dashboard.png` and embedded near the top of `README.md`. The embed line already exists in `README.md`; the PNG still needs to be captured from the live deploy and committed.
+- **Screenshot in README — ✅ PASSED (2026-05-22).** A screenshot of the running dashboard — captured from the public demo instance (dummy data, no guest PII, so it's safe in a public repo) — is committed at `docs/dashboard.png` and embedded near the top of `README.md`.
 
 ---
 

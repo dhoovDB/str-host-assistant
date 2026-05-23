@@ -14,7 +14,7 @@ The pieces, briefly: bookings come from a Google Calendar iCal feed. Gaps are fl
 
 ## Current state
 
-v1 in progress. See [ROADMAP.md](./ROADMAP.md) for the full task list and current task.
+🎉 **v1 shipped (2026-05-22).** A host and co-host open one secret URL and, in a 60-second glance, know what needs attention today — the daily Claude briefing, the upcoming bookings closest to action, flagged revenue-leak gaps, and cleaner coordination — live on Cloudflare Workers. See [ROADMAP.md](./ROADMAP.md) for what's next (v2: PriceLabs pricing, inventory + recurring maintenance, history view, and more).
 
 ## How development is run
 
