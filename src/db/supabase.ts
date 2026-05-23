@@ -1,20 +1,28 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { ChecklistKey } from "../client/types";
 
-// Local dev reads from process.env (vite injects from .env at build time).
-// Cloudflare Workers production: secrets come from the env binding passed to the
-// fetch handler, NOT process.env — wiring deferred to Task 10 / first deploy.
-// See ROADMAP decision log 2026-05-11.
-const supabaseUrl = process.env.SUPABASE_URL ?? "";
-const supabaseKey = process.env.SUPABASE_KEY ?? "";
+// Lazy client construction. Reading SUPABASE_* and constructing the client must
+// NOT happen at module load: this module sits in the route's import graph, so an
+// eager env read here (a) throws on any worker that has no Supabase secrets —
+// e.g. the DEMO_MODE demo instance — and (b) risks repeating the 2026-05-16
+// hydration incident if the read ever leaks into the client bundle. Mirrors
+// src/api/claude.ts: construct on first use, cache thereafter. See CLAUDE.md
+// "Env reads must be lazy" + ROADMAP decision log 2026-05-16 / 2026-05-22.
+let cachedClient: SupabaseClient | null = null;
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error(
-    "Supabase credentials missing. Set SUPABASE_URL and SUPABASE_KEY in .env (see .env.example).",
-  );
+function getSupabase(): SupabaseClient {
+  if (!cachedClient) {
+    const supabaseUrl = process.env.SUPABASE_URL ?? "";
+    const supabaseKey = process.env.SUPABASE_KEY ?? "";
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error(
+        "Supabase credentials missing. Set SUPABASE_URL and SUPABASE_KEY in .env (see .env.example).",
+      );
+    }
+    cachedClient = createClient(supabaseUrl, supabaseKey);
+  }
+  return cachedClient;
 }
-
-export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Row types match the SQL schema. Kept in sync by hand — small enough that codegen
 // (supabase gen types) is overkill for v1. Revisit if schema gets complex.
@@ -49,7 +57,7 @@ export async function getChecklistState(
   propertyId: string,
   bookingId: string,
 ): Promise<Record<ChecklistKey, boolean>> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("checklist_state")
     .select("step, completed")
     .eq("property_id", propertyId)
@@ -71,7 +79,7 @@ export async function upsertChecklist(
     step,
     completed,
   }));
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("checklist_state")
     .upsert(rows, { onConflict: "property_id,booking_id,step" });
   if (error) throw error;
@@ -110,7 +118,7 @@ export async function getBookingNote(
   propertyId: string,
   bookingId: string,
 ): Promise<string> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("booking_notes")
     .select("notes")
     .eq("property_id", propertyId)
@@ -125,7 +133,7 @@ export async function upsertBookingNote(
   bookingId: string,
   notes: string,
 ): Promise<void> {
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("booking_notes")
     .upsert(
       {
@@ -147,7 +155,7 @@ export async function createBriefing(input: {
   text: string;
   context: unknown;
 }): Promise<string> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("briefings")
     .insert({
       property_id: input.propertyId,
@@ -167,7 +175,7 @@ export async function getBriefingByDate(
   propertyId: string,
   date: string,
 ): Promise<BriefingRow | null> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("briefings")
     .select("*")
     .eq("property_id", propertyId)
@@ -181,7 +189,7 @@ export async function getRecentBriefings(
   propertyId: string,
   limit = 30,
 ): Promise<BriefingRow[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("briefings")
     .select("*")
     .eq("property_id", propertyId)
@@ -194,7 +202,7 @@ export async function getRecentBriefings(
 // --- briefing_feedback -----------------------------------------------------
 
 export async function recordFeedback(briefingId: string, helpful: boolean): Promise<void> {
-  const { error } = await supabase
+  const { error } = await getSupabase()
     .from("briefing_feedback")
     .insert({ briefing_id: briefingId, helpful });
   if (error) throw error;
@@ -203,7 +211,7 @@ export async function recordFeedback(briefingId: string, helpful: boolean): Prom
 // The 2-week review query: returns briefings that received a thumbs-down vote.
 // Output drives the human-in-the-loop tuning of briefing-rules.json (Task 6 / 7).
 export async function getUnhelpfulBriefings(propertyId: string): Promise<BriefingRow[]> {
-  const { data, error } = await supabase
+  const { data, error } = await getSupabase()
     .from("briefings")
     .select("*, briefing_feedback!inner(helpful)")
     .eq("property_id", propertyId)

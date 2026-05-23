@@ -74,4 +74,12 @@ export function getPropertyId(): string {
   return id;
 }
 
+// Lazy, like the credential getters above. When true, the route loader serves
+// static demo fixtures and the persistence server functions no-op — so a demo
+// worker can run with DEMO_MODE=true and zero secrets. Set as a plaintext var
+// on the demo deployment; unset (falsy) on the real one. See ROADMAP Task 12.
+export function isDemoMode(): boolean {
+  return (process.env.DEMO_MODE ?? "").trim().toLowerCase() === "true";
+}
+
 export const propertyConfig: PropertyConfig = validate(rawConfig);

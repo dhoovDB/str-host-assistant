@@ -19,7 +19,11 @@ function ChecklistStep({ label, complete, onClick }: { label: string; complete: 
       type="button"
       onClick={onClick}
       style={{
-        flex: 1,
+        // grow to fill, but a 120px basis makes a too-tight row wrap (2×2 on
+        // phones) instead of overflowing the card. 120px keeps the longest
+        // labels ("Reminder", "Checked Out") from truncating. See ROADMAP
+        // Task 12 / the 2026-05-22 mobile-wrap fix.
+        flex: "1 1 120px",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -65,7 +69,7 @@ export function Checklist({ state, onChange }: { state: Record<ChecklistKey, boo
 
   return (
     <>
-      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
         {cleanerSteps.map((s) => (
           <ChecklistStep
             key={s.key}
@@ -75,7 +79,7 @@ export function Checklist({ state, onChange }: { state: Record<ChecklistKey, boo
           />
         ))}
       </div>
-      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
         {guestSteps.map((s) => (
           <ChecklistStep
             key={s.key}

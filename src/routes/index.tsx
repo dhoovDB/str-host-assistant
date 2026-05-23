@@ -10,8 +10,9 @@ import { fetchBookings } from "@/api/gcal";
 import { generateBriefing } from "@/api/claude";
 import { computeGaps } from "@/engine/gaps";
 import { buildPrompt } from "@/engine/briefing";
-import { propertyConfig, getPropertyId } from "@/config/property";
+import { propertyConfig, getPropertyId, isDemoMode } from "@/config/property";
 import { briefingRules } from "@/config/briefing-rules";
+import { demoBookings, demoGaps, demoBriefing } from "@/demo/fixtures";
 import {
   createBriefing,
   getBriefingByDate,
@@ -36,6 +37,13 @@ const tablerCss = "https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dis
 // the briefings table can grow a UNIQUE(property_id, date) constraint
 // if it becomes an issue.
 const loadDashboardData = createServerFn({ method: "GET" }).handler(async () => {
+  // Demo instance: serve static fixtures and touch no external services, so the
+  // public demo worker (str-host-dashboard-demo) runs with DEMO_MODE=true and
+  // zero secrets. Must stay above any env-reading call below. See Task 12.
+  if (isDemoMode()) {
+    return { bookings: demoBookings, gaps: demoGaps, briefing: demoBriefing };
+  }
+
   const rawBookings = await fetchBookings();
   const propertyId = getPropertyId();
 
@@ -140,6 +148,7 @@ const submitChecklistUpdate = createServerFn({ method: "POST" })
     (data: { bookingId: string; state: Record<ChecklistKey, boolean> }) => data,
   )
   .handler(async ({ data }) => {
+    if (isDemoMode()) return; // demo writes are no-ops — nothing persists
     const propertyId = getPropertyId();
     await upsertChecklist(propertyId, data.bookingId, data.state);
   });
@@ -147,6 +156,7 @@ const submitChecklistUpdate = createServerFn({ method: "POST" })
 const submitNotesUpdate = createServerFn({ method: "POST" })
   .inputValidator((data: { bookingId: string; notes: string }) => data)
   .handler(async ({ data }) => {
+    if (isDemoMode()) return; // demo writes are no-ops — nothing persists
     const propertyId = getPropertyId();
     await upsertBookingNote(propertyId, data.bookingId, data.notes);
   });
@@ -158,6 +168,7 @@ const submitNotesUpdate = createServerFn({ method: "POST" })
 const submitBriefingFeedback = createServerFn({ method: "POST" })
   .inputValidator((data: { briefingId: string; helpful: boolean }) => data)
   .handler(async ({ data }) => {
+    if (isDemoMode()) return; // demo votes are no-ops — nothing persists
     await recordFeedback(data.briefingId, data.helpful);
   });
 

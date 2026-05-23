@@ -15,8 +15,8 @@ Each phase tightens that loop. v1 surfaces the daily picture and flags unbookabl
 **Done when:** A host can replace their daily cross-referencing across Airbnb, their calendar, and their own head with a single 60-second glance at this dashboard — and trusts the result enough to actually stop the cross-referencing.
 
 **v1 close gates (one-off, must both pass before declaring v1 shipped):**
-- **Demo To Wife.** The co-host (the dashboard's actual second user) loads the URL on her own phone, uses it without coaching, and confirms it's useful. A dashboard that needs translation by its author has not replaced the cross-referencing it was supposed to eliminate.
-- **Screenshot in README.** A real-data screenshot of the running dashboard is committed at `docs/dashboard.png` and embedded near the top of `README.md`.
+- **Demo To Wife — ✅ PASSED (2026-05-22).** The co-host (the dashboard's actual second user) loaded the live Cloudflare URL on her own phone and used it without coaching — a booming success. It replaced the cross-referencing it was meant to eliminate without needing translation by its author. Hydration/persistence confirmed in the same session (toggle a checklist step → reload → state survives).
+- **Screenshot in README — pending.** A real-data screenshot of the running dashboard committed at `docs/dashboard.png` and embedded near the top of `README.md`. The embed line already exists in `README.md`; the PNG still needs to be captured from the live deploy and committed.
 
 ---
 
@@ -176,6 +176,20 @@ Files: `wrangler.jsonc`, `package.json`, `README.md`, `.env.example`
 
 ---
 
+### Task 12: Public demo instance + mobile checklist fix (complete)
+
+Two things, shipped together off the co-host's 2026-05-22 demo feedback:
+
+**Mobile checklist wrap.** The cleaner-coordination row (4 buttons) overflowed the card on phones — `Ready` hung off the right edge — because the flex row had no wrap and `flex: 1` items can't shrink below their label width. Fixed with `flexWrap: "wrap"` + a `flex: "1 1 120px"` basis: the row collapses to a clean 2×2 on narrow screens and stays one row on desktop.
+
+**Public demo instance (`str-host-dashboard-demo`).** A second Cloudflare Worker running the same codebase on static dummy data — safe to link and screenshot publicly. A `DEMO_MODE` env flag drives it: when set, the route loader returns `src/demo/fixtures.ts` and the persistence server functions no-op, so the demo runs with **zero secrets**. Deployed as a separate worker (not a `/demo` path on the real one) so publishing the demo URL never exposes the real dashboard's base URL. Fixtures cover every feature: same-day turnaround, Active vs Upcoming, mixed checklists, a note, flagged + unflagged gaps. Prerequisite fix folded in: `src/db/supabase.ts` read env eagerly at module load (a latent CLAUDE.md "lazy env" violation) — converted to a lazy `getSupabase()` so the secret-less demo worker can import the route without throwing.
+
+Closes the second v1 close gate once the demo screenshot lands at `docs/dashboard.png`.
+
+Files: `src/config/property.ts`, `src/db/supabase.ts`, `src/demo/fixtures.ts`, `src/routes/index.tsx`, `src/client/Checklist.tsx`, `README.md`, `docs/README.md`
+
+---
+
 ## v2
 
 ### PriceLabs Integration via MCP
@@ -203,6 +217,8 @@ Alternative: If the PriceLabs MCP server is unmaintained or broken when you reac
 Checklist of restocking items (toilet paper, coffee, shampoo) that depletes after each turnover. Items below threshold surface automatically in the briefing and in the cleaner message on the booking card.
 
 Explore integration with TIDY for automatic inventory syncing if TIDY supports it.
+
+**Recurring maintenance tasks (co-host request, 2026-05-22 demo).** Alongside consumable restocking, track interval-based maintenance that isn't tied to a single turnover: HVAC air filters, the fridge water filter, periodic deep cleans. These recur on a time/usage cadence rather than depleting per-stay, so they need a "last done → next due" model and should surface in the briefing (and on the cleaner message) when due. Distinct from v4's TIDY maintenance tracking, which handles *reactive* maintenance requests — this is the *predictable, scheduled* kind. Decide up front whether recurring maintenance shares the inventory data model or gets its own table; the cadence/“next due” shape argues for separate.
 
 ### History view
 
@@ -380,3 +396,9 @@ A short record of architectural choices that aren't obvious from the code. Add e
 - **Secrets via `wrangler secret put`, populated onto `process.env` at runtime.** This retires the open worry from decision log 2026-05-16 about whether the lazy `process.env` getters would resolve on Workers. Confirmed live: the SSR'd home page returned a real Claude briefing on first load, which only happens if `getIcalUrl()`, `getAnthropicApiKey()`, `getPropertyId()`, and the Supabase env reads all resolved in the Worker runtime. `nodejs_compat` + compat date 2025-09-24 auto-populates `process.env` from the secrets; no code change was needed.
 - **The live URL is a credential and stays out of the repo.** v1 security is URL secrecy + permissive RLS (no login). Committing the `*.workers.dev` address to a public repo would defeat it, so it's shared privately. README documents the deploy *process* with a `<worker-name>.<subdomain>` placeholder, never the real address.
 - **Deferred:** custom domain (a `*.workers.dev` URL is enough for the wife demo), and a CI deploy step (deploys are manual `npm run deploy` for now — fine for a single maintainer).
+
+### 2026-05-22 — Public demo instance + supabase.ts made lazy
+
+- **Demo is a separate worker, not a `/demo` path.** In v1 the deployed URL *is* the access credential (URL secrecy + permissive RLS, no login). A `/demo` route on the real worker would force publishing the real base URL — anyone could then hit `/` and see live bookings. So the demo is its own worker (`str-host-dashboard-demo`) with an intentionally unrelated name, so its public URL gives away nothing about the real worker (`rva-fan-stunning`).
+- **`DEMO_MODE` env flag drives it, zero secrets.** A lazy `isDemoMode()` getter; when true, the loader returns `src/demo/fixtures.ts` and the checklist/notes/feedback server functions no-op. The demo worker is deployed with `--var DEMO_MODE:true` and no secrets. Confirmed live: the secret-less worker imports the route and serves fixtures without throwing, and a scan of the built bundles found no real secrets inlined (server-side `process.env` is runtime-populated on Workers, not build-inlined — the same fact that lets the real worker read its secrets at runtime).
+- **`src/db/supabase.ts` converted from eager to lazy.** It read `SUPABASE_*` and built the client at module load, throwing if absent — a latent version of the 2026-05-16 hydration-incident pattern, and a hard blocker for a secret-less demo worker (importing the route would throw before any DEMO_MODE check). Now a cached `getSupabase()` built on first use, mirroring `src/api/claude.ts`. Behavior-equivalent for the real worker (verified: the real instance still renders its live briefing + bookings after redeploy, exercising a same-day Supabase write), and the "env reads must be lazy" rule is now actually satisfied across the whole data layer.

@@ -10,6 +10,8 @@ The pieces, briefly: bookings come from a Google Calendar iCal feed. Gaps are fl
 
 ![Dashboard screenshot](./docs/dashboard.png)
 
+**Live demo:** **[str-host-dashboard-demo.dh-str.workers.dev](https://str-host-dashboard-demo.dh-str.workers.dev)** — the real codebase running on dummy data (no guest PII), showcasing every feature: a same-day-turnaround alert, the cleaner/guest checklists, flagged revenue-leak gaps, and the Claude-written briefing. The production instance runs the same code with live data behind a private, unpublished URL (in v1 the URL itself is the access credential).
+
 ## Current state
 
 v1 in progress. See [ROADMAP.md](./ROADMAP.md) for the full task list and current task.
@@ -36,6 +38,7 @@ src/api/                        ← external API calls (Claude, iCal feed)
 src/db/supabase.ts              ← reads/writes for checklists, briefings, feedback, booking notes
 src/server/                     ← server-side routes
 src/client/                     ← React components (inline styles + CSS variables, no CSS framework)
+src/demo/fixtures.ts            ← static demo data served when DEMO_MODE=true (no secrets needed)
 ```
 
 Stack: TanStack Start (React + SSR on Cloudflare Workers), Supabase (Postgres + RLS), Vite, TypeScript end-to-end.
