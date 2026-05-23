@@ -6,6 +6,8 @@ A daily-briefing dashboard for self-managed short-term rental hosts. Open it and
 
 Run `/globalrules` now. It contains the delegation rules, approval gates, status reporting format, commit discipline, and architecture principles that govern every session. The rest of this file assumes those rules are active.
 
+**Run `/codereview` before every commit that completes task work** — and commit only after it's clean or the findings are addressed. This is a hard gate; a passing `tsc`/build is not a substitute. A non-blocking `PreToolUse` reminder hook in `.claude/settings.local.json` nudges this at commit time, but the gate is this rule, not the hook.
+
 ---
 
 ## Architecture rules
