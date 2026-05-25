@@ -190,6 +190,20 @@ Files: `src/config/property.ts`, `src/db/supabase.ts`, `src/demo/fixtures.ts`, `
 
 ---
 
+## Next — pre-v2 hardening
+
+Not a v2 feature — a safety net for the shipped, live v1. Do this before the v2 feature work begins.
+
+### Hydration smoke test (pulled forward from v2 "Automated tests")
+
+Open `/` in a headless browser (Playwright), click a checklist step, assert the DOM state changed. Catches the bug class where SSR succeeds but client hydration silently fails — e.g. a top-level env read leaking into the client bundle via a type-import chain.
+
+**Why this jumps the queue:** decision log 2026-05-16 is the canonical case — a one-line change in `src/config/property.ts` (`export const icalUrl = validateIcalUrl()`) broke every interactive component on the dashboard while the dev server, type checker, and SSR all reported clean; it was diagnosed only after a user clicked a checkbox and nothing happened. v1 is now deployed and the co-host uses it daily, so a silent hydration regression hits a real user, not just the author. The test is tiny, and the failure mode is invisible to `tsc` and the build — exactly what an automated check is for.
+
+**Done when:** a Playwright smoke test loads `/`, toggles a checklist step, and asserts the DOM changed; it runs locally and fails if hydration breaks. As the first automated test in the repo, this also stands up the Playwright harness.
+
+---
+
 ## v2
 
 ### PriceLabs Integration via MCP
@@ -239,15 +253,14 @@ Open questions to revisit when this task is actually started:
 
 ### Automated tests
 
-Add a test framework and a baseline test suite. v1 ships without these; the test surface is too small to justify the tooling commitment until v2 features start landing.
+v1 shipped without tests deliberately — the surface was too small to justify the tooling. That argument expires the moment a v2 feature touches the engine. The **hydration smoke test was pulled forward** to "Next — pre-v2 hardening" above, because it guards a production failure mode rather than a v2 feature; the rest below land with the first engine-touching v2 work.
 
 Coverage targets:
 
-- **Hydration smoke test.** Open `/` in a headless browser, click a checklist step, assert the DOM state changed. Catches the bug class where SSR succeeds but client hydration silently fails — e.g. a top-level env read leaking into the client bundle via a type-import chain. Decision log 2026-05-16 is the canonical example: a one-line change in `src/config/property.ts` (`export const icalUrl = validateIcalUrl()`) broke every interactive component on the dashboard while the dev server, type checker, and SSR all reported clean. Diagnosed only after a user clicked a checkbox and nothing happened.
-- **Engine unit tests.** Pure functions in `src/engine/` (`parseCalendar`, `computeGaps`, `buildPrompt`) get input-output unit tests. Task 4 already has test cases sketched in comments — promote them to a real test file.
-- **Config validator tests.** Bad JSON shapes throw with the expected message; lazy env loaders return the expected value when env is set and throw with a clear message when not.
+- **Engine unit tests — write the harness *before* the first engine change.** Pure functions in `src/engine/` (`parseCalendar`, `computeGaps`, `buildPrompt`) get input-output unit tests. Task 4 already has cases sketched in comments — promote them to a real Vitest file. Trigger: the first v2 feature that modifies the engine (e.g. PriceLabs feeding the gaps table, or recurring-maintenance reshaping the data model). Net first, then change — so regressions surface as you edit.
+- **Config validator tests.** Bad JSON shapes throw with the expected message; lazy env loaders return the expected value when env is set and throw with a clear message when not. Fold into the same harness PR once Vitest exists.
 
-Frameworks: Playwright for the smoke test, Vitest for unit tests. Run locally; CI later if we add it.
+Frameworks: Playwright for the smoke test (already stood up by the pre-v2 hardening item), Vitest for unit tests. **Reuse:** banking-empire already runs 88 Vitest tests on the same config-as-data / pure-engine architecture — lift its Vitest setup rather than configuring from scratch; the `tdd-guide` skill matches when you start. Run locally; CI later if we add it.
 
 ### URL-based property routing
 
