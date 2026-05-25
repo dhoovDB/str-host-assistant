@@ -101,3 +101,19 @@ This is the robotics control loop pattern applied to a dashboard: sense → log 
 This architecture mirrors how production robotics software is structured: parameters live in data files, control logic is pure and testable, and I/O is isolated at the boundary. These are not arbitrary conventions, they are the same patterns used in robot fleet management systems where a bug in the wrong layer causes a physical consequence, not just a failed test.
 
 The briefing feedback loop follows the same shape as a robotics control loop: sense the environment, log the outcome, adjust the parameters, redeploy. The domain is different. The pattern is identical.
+
+---
+
+## Decision log
+
+*Project and architectural decisions are logged in `ROADMAP.md`. This log tracks changes to this CLAUDE.md only.*
+
+### 2026-05-15 — Adopted task-discipline rules from a sibling CLAUDE.md
+
+- Added Status Reporting (mandatory end-of-task block), Definition of done, three new Working style bullets (feedback/planning mode, batching, approval phrasing), and Git commit practices to `CLAUDE.md`.
+- Why: a sibling project's `CLAUDE.md` showed these conventions in action; adopting them tightens "what state is the work in" reporting and prevents bundling unrelated changes into one commit.
+- Deliberately left out: 4D framework definitions inline (those live in the README for human readers), "Adding a new X" runbook sections (premature for v1), and separate voice/writing guidance (no surfaces that need it yet).
+
+### 2026-05-25 — Moved this entry here from ROADMAP.md
+
+The 2026-05-15 entry above documents a change to this CLAUDE.md, so it now lives in this log per the portfolio convention (see `writing-kit/ROADMAP-TEMPLATE.md`). Project and architectural decisions stay in `ROADMAP.md`.

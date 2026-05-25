@@ -1,4 +1,4 @@
-# ROADMAP
+# STR Host Assistant — Roadmap
 
 ## What this builds toward
 
@@ -347,6 +347,8 @@ The work itself happens in the claude-skills repo, not here. This entry exists s
 
 ## Decision log
 
+*Project and architectural decisions live here. Changes to this repo's CLAUDE.md are logged in CLAUDE.md, not here.*
+
 A short record of architectural choices that aren't obvious from the code. Add entries when the choice resolves a real fork in the road — skip the routine.
 
 ### 2026-05-11 — Task 2 scoping
@@ -384,12 +386,6 @@ A short record of architectural choices that aren't obvious from the code. Add e
 - **`briefing-rules.json` falls back to defaults on invalid fields; `property.json` throws.** Asymmetric on purpose: a bad `property.json` means we can't identify the property (whose calendar to fetch, what cleaner to mention) — bail loudly so the misconfig surfaces immediately. A bad `briefing-rules.json` means tuning knobs are wrong — the briefing still generates with sensible defaults, the user sees odd output, edits the rules, and re-tries. Logging is per-field so one typo'd value doesn't silently affect the other knobs.
 - **Hand-rolled validation, no zod (still).** Five fields, all primitive types. Per decision log 2026-05-11 we revisit zod if validation gets non-trivial; this is still trivial. Adding a 50KB dep for `typeof x === "boolean"` checks isn't worth it.
 
-### 2026-05-15 — Adopted task-discipline rules from a sibling CLAUDE.md
-
-- Added Status Reporting (mandatory end-of-task block), Definition of done, three new Working style bullets (feedback/planning mode, batching, approval phrasing), and Git commit practices to `CLAUDE.md`.
-- Why: a sibling project's `CLAUDE.md` showed these conventions in action; adopting them tightens "what state is the work in" reporting and prevents bundling unrelated changes into one commit.
-- Deliberately left out: 4D framework definitions inline (those live in the README for human readers), "Adding a new X" runbook sections (premature for v1), and separate voice/writing guidance (no surfaces that need it yet).
-
 ### 2026-05-22 — First production deploy (Cloudflare Workers)
 
 - **Deploy the built output, not source.** `npm run deploy` runs `vite build` then `wrangler deploy -c dist/server/wrangler.json`. The `@cloudflare/vite-plugin` emits a generated `dist/server/wrangler.json` whose `main` is the built worker entry (`index.js`, `no_bundle: true`) with assets resolving to `dist/client`. The root `wrangler.jsonc` `main: src/server.ts` is the pre-build source the Vite plugin consumes — deploying the root config directly would bypass the Vite build and ship unbuilt source. Hence the explicit `-c` flag pointing at the generated config.
@@ -402,3 +398,7 @@ A short record of architectural choices that aren't obvious from the code. Add e
 - **Demo is a separate worker, not a `/demo` path.** In v1 the deployed URL *is* the access credential (URL secrecy + permissive RLS, no login). A `/demo` route on the real worker would force publishing the real base URL — anyone could then hit `/` and see live bookings. So the demo is its own worker (`str-host-dashboard-demo`) with an intentionally unrelated name, so its public URL gives away nothing about the real worker (`rva-fan-stunning`).
 - **`DEMO_MODE` env flag drives it, zero secrets.** A lazy `isDemoMode()` getter; when true, the loader returns `src/demo/fixtures.ts` and the checklist/notes/feedback server functions no-op. The demo worker is deployed with `--var DEMO_MODE:true` and no secrets. Confirmed live: the secret-less worker imports the route and serves fixtures without throwing, and a scan of the built bundles found no real secrets inlined (server-side `process.env` is runtime-populated on Workers, not build-inlined — the same fact that lets the real worker read its secrets at runtime).
 - **`src/db/supabase.ts` converted from eager to lazy.** It read `SUPABASE_*` and built the client at module load, throwing if absent — a latent version of the 2026-05-16 hydration-incident pattern, and a hard blocker for a secret-less demo worker (importing the route would throw before any DEMO_MODE check). Now a cached `getSupabase()` built on first use, mirroring `src/api/claude.ts`. Behavior-equivalent for the real worker (verified: the real instance still renders its live briefing + bookings after redeploy, exercising a same-day Supabase write), and the "env reads must be lazy" rule is now actually satisfied across the whole data layer.
+
+---
+
+*Last updated: 2026-05-25*
