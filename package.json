@@ -11,7 +11,8 @@
     "deploy:demo": "npm run build && wrangler deploy --name str-host-dashboard-demo -c dist/server/wrangler.json --var DEMO_MODE:true",
     "preview": "vite preview",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.96.0",
@@ -31,6 +32,7 @@
   "devDependencies": {
     "@eslint/js": "^9.32.0",
     "@lovable.dev/vite-tanstack-config": "^1.5.1",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^22.16.5",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",

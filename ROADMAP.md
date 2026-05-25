@@ -192,15 +192,15 @@ Files: `src/config/property.ts`, `src/db/supabase.ts`, `src/demo/fixtures.ts`, `
 
 ## Next — pre-v2 hardening
 
-Not a v2 feature — a safety net for the shipped, live v1. Do this before the v2 feature work begins.
+Not a v2 feature — a safety net for the shipped, live v1.
 
-### Hydration smoke test (pulled forward from v2 "Automated tests")
+### Hydration smoke test — ✅ DONE (2026-05-25)
 
-Open `/` in a headless browser (Playwright), click a checklist step, assert the DOM state changed. Catches the bug class where SSR succeeds but client hydration silently fails — e.g. a top-level env read leaking into the client bundle via a type-import chain.
+Playwright smoke test (`e2e/hydration.spec.ts`) loads `/`, clicks a checklist step, and asserts the icon flips — proving client hydration attached the handler. Catches the bug class where SSR succeeds but client hydration silently fails (e.g. a top-level env read leaking into the client bundle via a type-import chain).
 
-**Why this jumps the queue:** decision log 2026-05-16 is the canonical case — a one-line change in `src/config/property.ts` (`export const icalUrl = validateIcalUrl()`) broke every interactive component on the dashboard while the dev server, type checker, and SSR all reported clean; it was diagnosed only after a user clicked a checkbox and nothing happened. v1 is now deployed and the co-host uses it daily, so a silent hydration regression hits a real user, not just the author. The test is tiny, and the failure mode is invisible to `tsc` and the build — exactly what an automated check is for.
+**Why it jumped the queue:** decision log 2026-05-16 is the canonical case — a one-line change in `src/config/property.ts` (`export const icalUrl = validateIcalUrl()`) broke every interactive component on the dashboard while the dev server, type checker, and SSR all reported clean; it was diagnosed only after a user clicked a checkbox and nothing happened. v1 is deployed and the co-host uses it daily, so a silent hydration regression hits a real user, not just the author. The failure mode is invisible to `tsc` and the build — exactly what an automated check is for.
 
-**Done when:** a Playwright smoke test loads `/`, toggles a checklist step, and asserts the DOM changed; it runs locally and fails if hydration breaks. As the first automated test in the repo, this also stands up the Playwright harness.
+**How it shipped:** runs against the existing `DEMO_MODE` fixture path (`src/demo/fixtures.ts`), so it needs **zero secrets** and is deterministic. `npm run test:e2e` boots `vite dev` with `DEMO_MODE=true` on a forced port (4173) and runs headless Chromium. Verified both ways — green when healthy, and a simulated client-only hydration throw turns it red. First automated test in the repo; stands up the Playwright harness the v2 engine tests will reuse. Decisions recorded in the decision log below.
 
 ---
 
@@ -411,6 +411,12 @@ A short record of architectural choices that aren't obvious from the code. Add e
 - **Demo is a separate worker, not a `/demo` path.** In v1 the deployed URL *is* the access credential (URL secrecy + permissive RLS, no login). A `/demo` route on the real worker would force publishing the real base URL — anyone could then hit `/` and see live bookings. So the demo is its own worker (`str-host-dashboard-demo`) with an intentionally unrelated name, so its public URL gives away nothing about the real worker (`rva-fan-stunning`).
 - **`DEMO_MODE` env flag drives it, zero secrets.** A lazy `isDemoMode()` getter; when true, the loader returns `src/demo/fixtures.ts` and the checklist/notes/feedback server functions no-op. The demo worker is deployed with `--var DEMO_MODE:true` and no secrets. Confirmed live: the secret-less worker imports the route and serves fixtures without throwing, and a scan of the built bundles found no real secrets inlined (server-side `process.env` is runtime-populated on Workers, not build-inlined — the same fact that lets the real worker read its secrets at runtime).
 - **`src/db/supabase.ts` converted from eager to lazy.** It read `SUPABASE_*` and built the client at module load, throwing if absent — a latent version of the 2026-05-16 hydration-incident pattern, and a hard blocker for a secret-less demo worker (importing the route would throw before any DEMO_MODE check). Now a cached `getSupabase()` built on first use, mirroring `src/api/claude.ts`. Behavior-equivalent for the real worker (verified: the real instance still renders its live briefing + bookings after redeploy, exercising a same-day Supabase write), and the "env reads must be lazy" rule is now actually satisfied across the whole data layer.
+
+### 2026-05-25 — Hydration smoke test design (Playwright)
+
+- **Runs against `DEMO_MODE` fixtures, not live data or mocks.** The demo loader (`src/routes/index.tsx`) already returns `src/demo/fixtures.ts` with zero external calls, so the test needs no secrets and is deterministic. Reuses the Task 12 demo harness instead of standing up a separate mock layer. `DEMO_MODE=true` is passed via Playwright's `webServer.env` (not a committed `.dev.vars`) so the run stays secret-free and identical locally and in CI — confirmed that `isDemoMode()`'s `process.env.DEMO_MODE` read resolves under `vite dev`.
+- **Poll-click, not single-click — the assertion races hydration.** The checklist button is in the SSR HTML and immediately actionable to Playwright, so a single click can land *before* React attaches the handler and be lost (a false-negative flake; it bit during development). The test polls (`expect(...).toPass()`): while unhydrated the click is a harmless no-op (icon stays `ti-circle`), and the first click that registers flips it to `ti-check`. A genuinely broken hydration never registers, so the poll times out — still red. Verified by injecting a client-only throw.
+- **Port forced to 4173 (`--strictPort`).** `@lovable.dev/vite-tanstack-config` does its own port/host/strictPort sandbox detection; pinning the port keeps Playwright's `webServer.url` deterministic.
 
 ---
 
