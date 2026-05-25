@@ -1,4 +1,4 @@
-# str-assistant-dashboard
+# str-host-assistant
 
 A daily-briefing dashboard for self-managed short-term rental hosts. One URL per property, one question answered: what needs my attention today?
 
@@ -47,8 +47,8 @@ Stack: TanStack Start (React + SSR on Cloudflare Workers), Supabase (Postgres + 
 
 1. Clone and install:
    ```
-   git clone https://github.com/dhoovDB/str-assistant-dashboard
-   cd str-assistant-dashboard
+   git clone https://github.com/dhoovDB/str-host-assistant
+   cd str-host-assistant
    npm install
    ```
 2. Create a Supabase project, then run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL editor to create the four tables (`checklist_state`, `briefings`, `briefing_feedback`, `booking_notes`) with permissive RLS. The schema rationale lives in [ROADMAP Task 2](./ROADMAP.md#task-2-supabase-and-property-config-setup-1-hour) and the [decision log entry on RLS](./ROADMAP.md#decision-log).

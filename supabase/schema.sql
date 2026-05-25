@@ -1,4 +1,4 @@
--- str-assistant-dashboard — Supabase schema for v1
+-- str-host-assistant — Supabase schema for v1
 --
 -- Run this once in the Supabase SQL editor after creating your project.
 -- All four tables are required:
