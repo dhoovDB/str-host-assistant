@@ -34,7 +34,7 @@ The prompt is assembled by a pure function from `briefing-rules.json`. When a br
 
 **Env reads must be lazy.**
 
-Access to `process.env.X` lives inside a function body, never at module top level. Expose secrets as named functions — e.g. `getIcalUrl()` in `src/config/property.ts`. Canonical incident: decision log 2026-05-16.
+Access to `process.env.X` lives inside a function body, never at module top level. Expose secrets as named functions — e.g. `getIcalUrl()` in `src/config/property.ts`. Canonical incident: decision log 2026-05-16. **Enforced by ESLint** (`no-restricted-syntax` in `eslint.config.js`) — top-level reads fail `npm run lint`.
 
 **Styling: inline styles with dashboard tokens.**
 

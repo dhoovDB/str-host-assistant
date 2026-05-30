@@ -418,6 +418,14 @@ A short record of architectural choices that aren't obvious from the code. Add e
 - **Poll-click, not single-click — the assertion races hydration.** The checklist button is in the SSR HTML and immediately actionable to Playwright, so a single click can land *before* React attaches the handler and be lost (a false-negative flake; it bit during development). The test polls (`expect(...).toPass()`): while unhydrated the click is a harmless no-op (icon stays `ti-circle`), and the first click that registers flips it to `ti-check`. A genuinely broken hydration never registers, so the poll times out — still red. Verified by injecting a client-only throw.
 - **Port forced to 4173 (`--strictPort`).** `@lovable.dev/vite-tanstack-config` does its own port/host/strictPort sandbox detection; pinning the port keeps Playwright's `webServer.url` deterministic.
 
+### 2026-05-29 — ESLint guardrail against module-top-level `process.env` reads
+
+- **Two-layer defense.** The 2026-05-25 hydration smoke test catches the *symptom* (silent hydration failure) at runtime; this ESLint rule catches the *cause* (eager top-level env read) at edit time, before code ever runs. The "Env reads must be lazy" rule previously lived only as prose in CLAUDE.md and inline comments — enforcement relied on every future contributor (human or AI) remembering. Now machine-checked: `npm run lint` fails on a top-level `process.env.X` read in `src/`.
+- **Selector scope: top-level only.** Uses `no-restricted-syntax` with the esquery selector `:matches(Program > VariableDeclaration, Program > ExportNamedDeclaration > VariableDeclaration) MemberExpression[object.object.name='process'][object.property.name='env']`. Function-body reads pass (the lazy-getter pattern is exactly what the rule wants to allow). Verified with positive cases (`const X = process.env.Y` and `export const X = process.env.Y` both fail) and negative cases (the existing lazy getters in `property.ts`, `supabase.ts`, and `claude.ts` lint clean).
+- **Convention reinforced: `function getX()`, not `const getX = () =>`.** The rule rejects `export const getX = () => process.env.X` because the descendant selector matches it — technically lazy but inconsistent with the established codebase convention (per 2026-05-16: "the env loader is intentionally a function, not a const"). Treating the false positive as a feature, not a bug.
+- **Known gap.** A destructured access (`const { env } = process; const X = env.FOO;`) bypasses the selector. The pattern doesn't appear in this codebase; if it ever does, extend the rule. Documented in the inline comment in `eslint.config.js`.
+- **Indirect reads remain a convention.** This rule catches direct top-level reads (`export const X = process.env.Y`). Indirect reads where a top-level call invokes a function that reads env (the literal 2026-05-16 pattern: `export const icalUrl = validateIcalUrl()`) require runtime tracing to detect statically — out of scope for an AST rule. The architectural rule ("env reads must be lazy") still covers them; the smoke test catches their symptoms.
+
 ---
 
-*Last updated: 2026-05-25*
+*Last updated: 2026-05-29*
