@@ -4,7 +4,7 @@ const cleanerSteps: { key: ChecklistKey; label: string }[] = [
   { key: "notified", label: "Notified" },
   { key: "confirmed", label: "Confirmed" },
   { key: "reminder", label: "Reminder" },
-  { key: "ready", label: "Ready" },
+  { key: "ready", label: "Ready & Paid" },
 ];
 
 const guestSteps: { key: ChecklistKey; label: string }[] = [

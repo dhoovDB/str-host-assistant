@@ -236,7 +236,7 @@ function Index() {
               <li><strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Notified</strong>: cleaner has been informed.</li>
               <li><strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Confirmed</strong>: cleaner has agreed.</li>
               <li><strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Reminder</strong>: follow-up sent 1–2 days before with checkout date and window.</li>
-              <li><strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Ready</strong>: turnover complete, unit is guest-ready.</li>
+              <li><strong style={{ color: "var(--color-text-primary)", fontWeight: 600 }}>Ready &amp; Paid</strong>: turnover is complete, unit is guest-ready, and the cleaner has been paid for the turnover.</li>
             </ul>
             <div style={{ marginTop: 8, fontWeight: 600, color: "var(--color-text-primary)", textTransform: "uppercase", letterSpacing: "0.05em", fontSize: 11 }}>Guest stay</div>
             <ul style={{ paddingLeft: 18, margin: "2px 0 0" }}>

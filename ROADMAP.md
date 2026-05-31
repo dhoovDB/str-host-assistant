@@ -202,6 +202,10 @@ Playwright smoke test (`e2e/hydration.spec.ts`) loads `/`, clicks a checklist st
 
 **How it shipped:** runs against the existing `DEMO_MODE` fixture path (`src/demo/fixtures.ts`), so it needs **zero secrets** and is deterministic. `npm run test:e2e` boots `vite dev` with `DEMO_MODE=true` on a forced port (4173) and runs headless Chromium. Verified both ways — green when healthy, and a simulated client-only hydration throw turns it red. First automated test in the repo; stands up the Playwright harness the v2 engine tests will reuse. Decisions recorded in the decision log below.
 
+### "Ready" → "Ready & Paid" cleaner status — ✅ DONE (2026-05-31)
+
+Renamed the final cleaner-coordination step label to **Ready & Paid** (`src/client/Checklist.tsx`) and expanded its legend entry (`src/routes/index.tsx`) to "turnover is complete, unit is guest-ready, and the cleaner has been paid for the turnover." Captures cleaner payment in the existing checklist step rather than adding a new one. Label-only change; the underlying `ready` checklist key is unchanged.
+
 ---
 
 ## v2
