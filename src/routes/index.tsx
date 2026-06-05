@@ -17,6 +17,7 @@ import {
   createBriefing,
   getBriefingByDate,
   recordFeedback,
+  updateFeedbackNote,
   getChecklistState,
   upsertChecklist,
   getBookingNote,
@@ -172,6 +173,17 @@ const submitBriefingFeedback = createServerFn({ method: "POST" })
     await recordFeedback(data.briefingId, data.helpful);
   });
 
+// Optional free-text reason that follows a thumbs-down. Separate from the vote
+// write above so the one-tap path stays intact: the vote already persisted when
+// the user tapped thumbs-down; this only attaches the "what did this miss?" note
+// to that briefing's down-vote row. No-op in demo mode like the other writes.
+const submitFeedbackNote = createServerFn({ method: "POST" })
+  .inputValidator((data: { briefingId: string; note: string }) => data)
+  .handler(async ({ data }) => {
+    if (isDemoMode()) return; // demo writes are no-ops — nothing persists
+    await updateFeedbackNote(data.briefingId, data.note);
+  });
+
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
@@ -223,6 +235,11 @@ function Index() {
           onFeedback={(helpful) => {
             submitBriefingFeedback({ data: { briefingId: briefing.id, helpful } }).catch(
               (err) => console.error("briefing feedback write failed:", err),
+            );
+          }}
+          onNote={(note) => {
+            submitFeedbackNote({ data: { briefingId: briefing.id, note } }).catch(
+              (err) => console.error("briefing feedback note write failed:", err),
             );
           }}
         />

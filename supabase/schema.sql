@@ -35,8 +35,19 @@ create table if not exists briefing_feedback (
   id uuid primary key default gen_random_uuid(),
   briefing_id uuid not null references briefings(id) on delete cascade,
   helpful boolean not null,
+  -- Optional free-text reason captured after a thumbs-down ("What did this
+  -- miss?"). Null for thumbs-up votes and for down-votes left un-elaborated —
+  -- the one-tap path never requires it. See ROADMAP v2 "Briefing feedback
+  -- enhancements" / decision log 2026-06-05.
+  note text,
   submitted_at timestamptz not null default now()
 );
+
+-- Migration for databases created before the `note` column existed. The full
+-- file above is "run once" (the create-policy lines error on re-run), so apply
+-- this single statement on its own in the Supabase SQL editor to add the column
+-- to a live deployment. Idempotent — safe to run more than once.
+alter table briefing_feedback add column if not exists note text;
 
 create table if not exists booking_notes (
   property_id text not null,

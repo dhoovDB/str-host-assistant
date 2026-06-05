@@ -46,6 +46,7 @@ export type BriefingFeedbackRow = {
   id: string;
   briefing_id: string;
   helpful: boolean;
+  note: string | null;
   submitted_at: string;
 };
 
@@ -205,6 +206,23 @@ export async function recordFeedback(briefingId: string, helpful: boolean): Prom
   const { error } = await getSupabase()
     .from("briefing_feedback")
     .insert({ briefing_id: briefingId, helpful });
+  if (error) throw error;
+}
+
+// Attach an optional free-text reason to a thumbs-down vote. Keyed by briefing
+// id, not by feedback-row id: the vote is recorded as its own fire-and-forget
+// insert (recordFeedback above), and we deliberately avoid threading the new
+// row's uuid back through the client to keep the one-tap vote path untouched.
+// For a single-user dashboard each briefing has one down-vote, so this targets
+// exactly that row; the cross-device edge case (the dashboard allows it, with
+// no server dedup) would write the same note to every down-vote row for the
+// briefing, which is acceptable for v1. See ROADMAP decision log 2026-06-05.
+export async function updateFeedbackNote(briefingId: string, note: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from("briefing_feedback")
+    .update({ note })
+    .eq("briefing_id", briefingId)
+    .eq("helpful", false);
   if (error) throw error;
 }
 
