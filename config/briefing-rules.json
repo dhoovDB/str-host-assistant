@@ -8,6 +8,7 @@
     "Punctuation: periods and commas only. No em-dashes (—), no en-dashes (–), no semicolons (;), no en-dash arrows for ranges.",
     "Date ranges: write 'May 22 to May 25' or 'May 22, 23, 24'. Never 'May 22–25' or 'May 22-25'.",
     "Avoid AI tells: no 'I notice that', 'It's worth noting', 'Notably,', 'It's important to', 'essentially', 'basically', 'simply', 'delve'. No passive voice in summaries. No parenthetical asides where a plain sentence works.",
-    "Don't title-case casual phrases. 'same-day turnover' not 'Same-Day Turnover'."
+    "Don't title-case casual phrases. 'same-day turnover' not 'Same-Day Turnover'.",
+    "Gap vs turnaround, never confuse them. A same-day turnaround is a single date where one guest checks out and the next checks in, zero empty nights. It shows on a booking line marked 'same-day arrival'. A gap is one or more empty nights between two bookings, listed under 'Unbookable gaps in window'. Never call a gap a turnaround or 'same-day' anything. A gap is empty nights to fill, not a turnaround to staff."
   ]
 }

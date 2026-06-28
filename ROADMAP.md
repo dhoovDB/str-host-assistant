@@ -208,6 +208,29 @@ Renamed the final cleaner-coordination step label to **Ready & Paid** (`src/clie
 
 ---
 
+## Next — live v1 briefing tuning
+
+Operational tuning of the shipped, live v1 — running the briefing feedback loop by hand (per CLAUDE.md's 2-week cadence) and fixing correctness bugs the co-host hits daily. Distinct from the v2 "Briefing feedback enhancements," which *builds tooling* for this loop; this is *running* it.
+
+### Briefing feedback review + rules tuning (round 1) — ✅ DONE (2026-06-28)
+
+First manual run of the feedback loop, now that qualitative thumbs-down notes have been live since 2026-06-05. Reviewed the three `helpful = false` votes in `briefing_feedback`:
+- 2026-06-05 — no note (carries no signal; likely a test vote the day the note feature shipped).
+- 2026-06-17 — "wrong about same day turnover - june 21 check out and june 22 check in is not a same-day turnover."
+- 2026-06-20 — "misunderstood what it means to be same day turnaround."
+
+**Dominant pattern (2 of 3 votes): short gaps mislabeled as same-day turnarounds.** The reported trigger was a *1-night* gap (Jun 21 checkout → Jun 22 check-in), not the ">1 day" first assumed — a single vacant night between consecutive-day checkout/check-in is what tempts the briefing to call it "same-day."
+
+**Root cause is the LLM prose, not the engine.** `annotateTurnover` in `src/engine/calendar.ts` computes `sameDayTurnaround = (prev.checkOut === checkIn)` correctly — for Jun 21/Jun 22 the dates differ, so the flag is false and `computeGaps` emits a correct flagged 1-night gap. Both the 🚨 card and the prompt read that correct flag. The mislabel is introduced only when Claude writes the free-form briefing and reaches for "same-day turnover" to describe a short, emphasized gap. The stored `briefings.context` for both flagged briefings confirms this in hard data — each shows the gap as `{nights:1, 2026-06-21→2026-06-22, flagged:true}` (plus an unrelated 4-night unflagged gap) with every booking's `sameDayTurnaround: false`, generated under the pre-fix rules snapshot. The engine handed Claude correct inputs; the "same-day" wording was purely the model's. The fix therefore belongs in the prompt/rules layer, not the engine (per "edit the config, not the engine"), and does not trip the "Vitest harness before first engine change" gate.
+
+**Fix:** added a guardrail entry to `config/briefing-rules.json` `customRules` defining gap vs. same-day turnaround and forbidding the conflation, tied to the literal prompt labels ("same-day arrival", "Unbookable gaps in window").
+
+**Verified** with a throwaway script that reused the repo's own `buildPrompt` + `generateBriefing` against the exact reproducer (1-night gap, no real same-day turnaround, so any "same-day"/"turnover" mention is the bug), run 4× each way: **without the guardrail, 2–3 of 4 runs mislabeled the gap as a same-day turnover; with it, 0 of 4 committed the target mislabel** (one run used "turnover" loosely for the real June 22 check-in clean, which is legitimate). LLM output is non-deterministic, so this reduces rather than provably eliminates the mislabel; revisit if it recurs in feedback. Script not committed.
+
+Nothing else actionable from these three votes. The review cadence continues as votes accumulate.
+
+---
+
 ## v2
 
 ### PriceLabs Integration via MCP
@@ -440,4 +463,4 @@ A short record of architectural choices that aren't obvious from the code. Add e
 
 ---
 
-*Last updated: 2026-06-05*
+*Last updated: 2026-06-28*
