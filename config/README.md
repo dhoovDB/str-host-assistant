@@ -31,7 +31,7 @@ Knobs for how the daily Claude briefing is assembled. Read on server startup; pe
 The robotics control loop applied to prose: don't edit the engine, edit the rules.
 
 1. Thumbs-down the bad briefing on the dashboard.
-2. After ~2 weeks of votes, query `briefing_feedback` for unhelpful entries.
+2. Once 3 or more new unhelpful votes have accumulated, query `briefing_feedback` for them.
 3. Look at the matching `briefings.context` to see what data Claude saw that day.
 4. Adjust this file — raise/lower thresholds, add a `customRules` entry, change tone.
 5. Refresh the dashboard; Claude regenerates with the new rules.

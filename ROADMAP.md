@@ -210,7 +210,7 @@ Renamed the final cleaner-coordination step label to **Ready & Paid** (`src/clie
 
 ## Next — live v1 briefing tuning
 
-Operational tuning of the shipped, live v1 — running the briefing feedback loop by hand (per CLAUDE.md's 2-week cadence) and fixing correctness bugs the co-host hits daily. Distinct from the v2 "Briefing feedback enhancements," which *builds tooling* for this loop; this is *running* it.
+Operational tuning of the shipped, live v1 — running the briefing feedback loop by hand (per CLAUDE.md's review trigger: 3+ new unhelpful votes) and fixing correctness bugs the co-host hits daily. Distinct from the v2 "Briefing feedback enhancements," which *builds tooling* for this loop; this is *running* it.
 
 ### Briefing feedback review + rules tuning (round 1) — ✅ DONE (2026-06-28)
 
@@ -228,6 +228,14 @@ First manual run of the feedback loop, now that qualitative thumbs-down notes ha
 **Verified** with a throwaway script that reused the repo's own `buildPrompt` + `generateBriefing` against the exact reproducer (1-night gap, no real same-day turnaround, so any "same-day"/"turnover" mention is the bug), run 4× each way: **without the guardrail, 2–3 of 4 runs mislabeled the gap as a same-day turnover; with it, 0 of 4 committed the target mislabel** (one run used "turnover" loosely for the real June 22 check-in clean, which is legitimate). LLM output is non-deterministic, so this reduces rather than provably eliminates the mislabel; revisit if it recurs in feedback. Script not committed.
 
 Nothing else actionable from these three votes. The review cadence continues as votes accumulate.
+
+### Briefing feedback review (round 2) — ✅ DONE (2026-10-04)
+
+Second manual run, ~14 weeks after round 1 (the 2-week cadence had lapsed).
+- **Votes since 2026-06-28:** 3, all helpful (06-28, 07-04, 08-02). **0 new unhelpful votes**, so nothing to tune. The round-1 same-day-turnaround guardrail has drawn no repeat complaints.
+- **Usage:** briefings generated per month — May 7, Jun 20, Jul 6, Aug 12, Sep 5; last 2026-09-24. No votes since 2026-08-02. Owner confirmed the drop is mostly the owner's own reduced use, not the co-host; no action.
+- **Cadence changed:** the review now runs once 3+ new unhelpful votes accumulate, replacing the fixed 2 weeks — at ~1 vote/month a calendar cadence produces empty reviews (see Decision log 2026-10-04).
+- Data read via the repo's Supabase client (read-only); the Supabase MCP connector timed out on every query that day.
 
 ---
 
@@ -271,7 +279,7 @@ Coupling with Data Retention: history view shows up to the retention horizon. Be
 
 Purge old `checklist_state`, `briefings`, and `briefing_feedback` rows after 12 months. Hard delete, not archive. Implement as a scheduled job (Supabase pg_cron or Cloudflare Workers cron trigger).
 
-Constraint: retention window must be longer than the briefing feedback review cadence (currently 2 weeks). 12 months satisfies this comfortably.
+Constraint: retention window must be longer than the briefing feedback review window (now vote-triggered: 3+ new unhelpful votes, historically ~1 vote/month, so reviews may span several months). 12 months still satisfies this comfortably.
 
 Open questions to revisit when this task is actually started:
 - Is 12 months still the right horizon? Longer if the user wants more history; shorter if storage costs balloon.
@@ -461,6 +469,9 @@ A short record of architectural choices that aren't obvious from the code. Add e
 - **No engine touched, so the "tests before first engine change" gate did not fire.** The change spans the DB boundary (`src/db/supabase.ts`), a server function + prop wiring (`src/routes/index.tsx`), and a client component (`src/client/Briefing.tsx`) — the pure engine in `src/engine/` is untouched, so the deferred Vitest harness stays deferred per the roadmap's "net first, then change" sequencing.
 - **Schema migration is separable from the run-once file.** `supabase/schema.sql` is "run once" (its create-policy lines error on re-run), so the new column ships both in the `create table` block (fresh setups) and as a standalone idempotent `alter table … add column if not exists note text;` to apply against the live deployment. The bare-vote path never touches `note`, so existing voting is unaffected even before the migration runs.
 
+### 2026-10-04 — Feedback review triggered by votes, not the calendar
+Round 2 found 0 unhelpful votes in 14 weeks (3 helpful votes total), so the fixed 2-week review mostly produced empty runs. The review now runs once 3 or more new unhelpful votes accumulate since the last review. Updated in CLAUDE.md (Feedback mechanism), config/README.md and the retention constraint below. The v2 "Claude-powered briefing rule tuning" cron keeps its own cadence decision.
+
 ---
 
-*Last updated: 2026-06-28*
+*Last updated: 2026-10-04 (briefing feedback review round 2; vote-triggered review)*

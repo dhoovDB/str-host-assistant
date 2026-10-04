@@ -90,7 +90,7 @@ src/client/                     ← React components
 
 ## Feedback mechanism
 
-Thumbs up/down on the briefing panel POSTs to `/api/feedback` with `{briefingId, helpful}`. Both buttons disable after one vote. After 2 weeks, query Supabase for unhelpful briefings, look for patterns, and edit `briefing-rules.json` to fix them.
+Thumbs up/down on the briefing panel POSTs to `/api/feedback` with `{briefingId, helpful}`. Both buttons disable after one vote. Once 3 or more new unhelpful votes have accumulated since the last review, query Supabase for unhelpful briefings, look for patterns, and edit `briefing-rules.json` to fix them.
 
 This is the robotics control loop pattern applied to a dashboard: sense → log outcome → adjust parameters → repeat.
 
@@ -117,3 +117,7 @@ The briefing feedback loop follows the same shape as a robotics control loop: se
 ### 2026-05-25 — Moved this entry here from ROADMAP.md
 
 The 2026-05-15 entry above documents a change to this CLAUDE.md, so it now lives in this log per the portfolio convention (see `writing-kit/ROADMAP-TEMPLATE.md`). Project and architectural decisions stay in `ROADMAP.md`.
+
+### 2026-10-04 — Feedback review is vote-triggered, not every 2 weeks
+
+The Feedback mechanism section now reviews once 3+ new unhelpful votes accumulate, replacing the fixed 2-week cadence (see ROADMAP decision log 2026-10-04).
