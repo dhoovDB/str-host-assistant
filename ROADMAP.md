@@ -190,6 +190,30 @@ Files: `src/config/property.ts`, `src/db/supabase.ts`, `src/demo/fixtures.ts`, `
 
 ---
 
+## Next — ad hoc stays ⭐ TOP PRIORITY
+
+A real gap in the live v1, found 2026-10-25: the dashboard cannot represent a stay that isn't an Airbnb reservation.
+
+### Ad hoc (off-platform) stays
+
+**Problem.** Bookings come only from the Airbnb iCal feed (`src/api/gcal.ts` → `parseCalendar`), and `parseReservation` in `src/engine/calendar.ts` deliberately drops any entry whose SUMMARY contains "Not available" or "Blocked". So a stay arranged outside Airbnb (friends, family, a direct booking paid by Venmo/Zelle) never shows up. That's true even when the host blocks those dates on Airbnb. The result:
+- **No booking card**, so no cleaner checklist (notified / confirmed / reminder / ready & paid) and no guest-stay tracking for that stay.
+- **A false gap.** `computeGaps` works between consecutive *reservations*. If the blocked stay sits between two Airbnb bookings, its nights show as an open (possibly flagged) gap, and the briefing may push to fill or discount dates that are already taken.
+- **The briefing doesn't know** about the arrival, departure, or turnovers around it.
+
+**Example that triggered this.** Two friends are staying in the unit **Tue Nov 3 → Tue Nov 10, 2026 (7 nights)**, paying by Venmo or Zelle. It's not an Airbnb reservation, so the host blocks the dates on Airbnb and tracks the stay somewhere else by hand. The turnovers on each side still need the cleaner, and the dashboard shows none of it.
+
+**Done when.** The host can add an ad hoc stay (dates + short label + optional notes) from the dashboard. After that it appears as a booking card with the normal cleaner checklist and notes, it closes the gap it covers in the gaps table, and the briefing treats it like any other stay (arrival, departure, adjacent turnovers). Ad hoc cards are visually marked as off-platform and link nowhere on Airbnb.
+
+**Open design questions (decide in the implementing session):**
+- **Source of truth:** a new Supabase table (e.g. `adhoc_stays`: `property_id`, `id`, `check_in`, `check_out`, `label`, `notes`), merged with iCal bookings server-side. Or: promote Airbnb "Blocked" entries to stays and let the host label them. Supabase is the likely fit: blocks don't carry labels, and blocking is also used for non-stay reasons.
+- **Merge point:** keep `parseCalendar` Airbnb-only and merge ad hoc stays afterwards, before `annotateTurnover` / `computeGaps`. That way turnover and gap logic covers both sources. Watch for overlaps with a real reservation (warn, don't silently drop).
+- **IDs:** checklist state and notes key off `booking_id` (today the iCal UID). Ad hoc stays need a stable, non-colliding ID (e.g. `adhoc-<uuid>`).
+- **Entry UI:** a minimal add/edit/delete form. No auth beyond the existing secret-URL model.
+- **Gate:** merging ad hoc stays before `annotateTurnover` / `computeGaps` changes what the engine processes. If it modifies anything in `src/engine/`, the v2 "Automated tests" rule fires first: stand up the Vitest harness *before* the engine change (lift banking-empire's setup).
+
+---
+
 ## Next — pre-v2 hardening
 
 Not a v2 feature — a safety net for the shipped, live v1.
