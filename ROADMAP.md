@@ -190,7 +190,7 @@ Files: `src/config/property.ts`, `src/db/supabase.ts`, `src/demo/fixtures.ts`, `
 
 ---
 
-## Next — ad hoc stays ⭐ TOP PRIORITY
+## Next — ad hoc stays: 🚀 LIVE (2026-11-01), final checks pending
 
 A real gap in the live v1, found 2026-10-25: the dashboard cannot represent a stay that isn't an Airbnb reservation.
 
@@ -207,10 +207,14 @@ A real gap in the live v1, found 2026-10-25: the dashboard cannot represent a st
 
 **Progress:**
 - ✅ Vitest harness on the current engine.
-- ✅ Read path: `adhoc_stays` table, merge before `buildSchedule`, card tag, briefing line. Verified in demo mode only so far.
-- ✅ Write path: `scripts/adhoc-stay.ts` (add, list, update, delete). Validation and error paths verified; the database round trip waits on the migration.
-- ⬜ `/adhocstay` command in writing-kit.
-- ⬜ Live: migration applied, deployed, first real stay added.
+- ✅ Read path: `adhoc_stays` table, merge before `buildSchedule`, card tag, briefing line. Verified on the live site: the Nov 3–10 card renders, and the former 11-night gap is now two 2-night gaps.
+- ✅ Write path: `scripts/adhoc-stay.ts` (add, list, update, delete). Round trip verified against the live database on throwaway stays, including delete clearing checklist and notes rows.
+- ✅ `/adhocstay` command in writing-kit.
+- ✅ Live: migration applied, live and demo deployed, first real stay added.
+- ⬜ Owner check on the live card: a checklist toggle and a note survive a reload. Only verified in demo mode, where writes are no-ops.
+- ⬜ The next day's briefing (2026-11-02) mentions the off-platform stay.
+
+**Candidate follow-up:** warn when an ad hoc stay's dates aren't blocked on Airbnb, since Airbnb can still sell those nights. The feed's block entries would make this possible; for now `/adhocstay` only reminds the host.
 
 ---
 
@@ -509,4 +513,4 @@ Round 2 found 0 unhelpful votes in 14 weeks (3 helpful votes total), so the fixe
 
 ---
 
-*Last updated: 2026-11-01 (ad hoc stays: read and write paths)*
+*Last updated: 2026-11-01 (ad hoc stays live; final checks pending)*
