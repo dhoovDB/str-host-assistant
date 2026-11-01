@@ -81,7 +81,7 @@ scripts/adhoc-stay.ts           ← add, list, update, delete ad hoc stays (CLI)
 
 ## Ad hoc stays
 
-Stays arranged outside Airbnb live in the `adhoc_stays` table. There is no entry form on the dashboard: the `/adhocstay` command runs `scripts/adhoc-stay.ts` from this repo's root. Keep guest names out of this public repo, including tests, fixtures and docs.
+Stays arranged outside Airbnb live in the `adhoc_stays` table. There is no entry form on the dashboard: the `/adhocstay` command runs `scripts/adhoc-stay.ts` from this repo's root. Like Airbnb stays, they store no guest names.
 
 ## What not to do
 

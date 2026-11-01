@@ -203,7 +203,7 @@ A real gap in the live v1, found 2026-10-25: the dashboard cannot represent a st
 
 **Example that triggered this.** Two friends are staying in the unit **Tue Nov 3 → Tue Nov 10, 2026 (7 nights)**, paying by Venmo or Zelle. It's not an Airbnb reservation, so the host blocks the dates on Airbnb and tracks the stay somewhere else by hand. The turnovers on each side still need the cleaner, and the dashboard shows none of it.
 
-**Done when.** The host can tell Claude about an ad hoc stay in a repeatable way (dates + short label). After that it appears as a booking card with the normal cleaner checklist and notes, it closes the gap it covers in the gaps table, and the briefing treats it like any other stay (arrival, departure, adjacent turnovers). Ad hoc cards carry an "Ad hoc" tag and link nowhere on Airbnb. Design decisions are in the decision log, 2026-11-01.
+**Done when.** The host can tell Claude about an ad hoc stay in a repeatable way (dates only; no guest names, same as Airbnb stays). After that it appears as a booking card with the normal cleaner checklist and notes, it closes the gap it covers in the gaps table, and the briefing treats it like any other stay (arrival, departure, adjacent turnovers). Ad hoc cards carry a yellow "Ad hoc" tag and link nowhere on Airbnb. Design decisions are in the decision log, 2026-11-01.
 
 **Progress:**
 - ✅ Vitest harness on the current engine.
@@ -497,7 +497,7 @@ A short record of architectural choices that aren't obvious from the code. Add e
 Round 2 found 0 unhelpful votes in 14 weeks (3 helpful votes total), so the fixed 2-week review mostly produced empty runs. The review now runs once 3 or more new unhelpful votes accumulate since the last review. Updated in CLAUDE.md (Feedback mechanism), config/README.md and the retention constraint below. The v2 "Claude-powered briefing rule tuning" cron keeps its own cadence decision.
 
 ### 2026-11-01 — Ad hoc stays: a Supabase table, entered by telling Claude
-- **Rule: a stay Airbnb doesn't know about lives in `adhoc_stays` and is merged with the iCal feed before anything is computed.** Airbnb blocks stay dropped, because they carry no label and are also used for non-stay reasons.
+- **Rule: a stay Airbnb doesn't know about lives in `adhoc_stays` and is merged with the iCal feed before anything is computed.** Airbnb blocks stay dropped, because they're also used for non-stay reasons, so a block doesn't prove anyone is staying.
 - **No dashboard UI for entry (owner's call).** The original item proposed an add/edit/delete form. Ad hoc stays are rare, and telling Claude is enough as long as it's repeatable, so entry goes through a script behind a slash command. That removes the form, the server functions, and the post-save refresh work.
 - **The table's primary key is the booking id** (`adhoc-<uuid>`), so `checklist_state` and `booking_notes` work unchanged with no mapping. There's no `notes` column for the same reason: the card's existing notes field covers it.
 - **`parseCalendar` split into `parseIcal` and `buildSchedule`.** Windowing, sorting and turnover annotation now run on the merged list, so same-day flags work across both sources.
@@ -505,7 +505,7 @@ Round 2 found 0 unhelpful votes in 14 weeks (3 helpful votes total), so the fixe
 - **Display rules unchanged.** Ad hoc stays follow the same 4-week window and 3-card cap as Airbnb stays. The script prints when a later stay will show, so it doesn't look lost.
 - **Overlaps warn at entry, and still save.** The script checks the live feed and other ad hoc stays. There's no card warning: once dates are blocked on Airbnb, a reservation can't land on them later. If the feed is down, the script says it couldn't check and saves anyway.
 - **The script runs on Node's built-in TypeScript support, with no new dependency.** `fetchBookings` now takes the iCal URL as an argument, which keeps `src/api/gcal.ts` free of the JSON-backed property config that plain Node can't load. `scripts/adhoc-stay.test.ts` runs the script under plain Node, because `tsc` and Vitest both pass on imports that Node can't resolve.
-- **Guest names stay out of this public repo.** Labels live in Supabase only. They do reach the Claude API through the briefing prompt and are stored in `briefings.context`, and deleting a stay doesn't remove them from past briefings. The cards are the first place guest names appear on the dashboard, whose only access control is the URL.
+- **No guest names, same as Airbnb stays (owner's call).** The first version stored a label and showed it on the card. Airbnb's feed has no names, so the dashboard has never held any, and ad hoc stays now match: a row is just dates, and the only mark on the card is a yellow "Ad hoc" tag beside the status badge.
 
 ---
 

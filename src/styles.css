@@ -107,6 +107,8 @@
   --color-status-green-fg: oklch(0.42 0.13 155);
   --color-status-blue-bg: oklch(0.94 0.05 245);
   --color-status-blue-fg: oklch(0.45 0.15 245);
+  --color-status-yellow-bg: oklch(0.94 0.1 95);
+  --color-status-yellow-fg: oklch(0.45 0.1 85);
   --color-warning: oklch(0.62 0.18 50);
   --color-step-incomplete-bg: oklch(0.96 0.005 260);
   --color-step-incomplete-fg: oklch(0.55 0.02 260);

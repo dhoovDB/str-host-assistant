@@ -85,7 +85,6 @@ create table if not exists adhoc_stays (
   property_id text not null,
   check_in date not null,
   check_out date not null,
-  label text not null,
   created_at timestamptz not null default now(),
   check (check_out > check_in)
 );

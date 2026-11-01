@@ -16,7 +16,7 @@ function schedule(ics: string, now: Date): Booking[] {
 }
 
 function adhoc(check_in: string, check_out: string): Booking {
-  return adhocToBooking({ id: "adhoc-test", check_in, check_out, label: "Test stay" });
+  return adhocToBooking({ id: "adhoc-test", check_in, check_out });
 }
 
 function vevent(fields: {
@@ -168,7 +168,6 @@ describe("adhocToBooking", () => {
     expect(adhoc("2026-11-03", "2026-11-10")).toMatchObject({
       id: "adhoc-test",
       source: "adhoc",
-      label: "Test stay",
       reservationUrl: "",
       checkIn: "2026-11-03",
       checkOut: "2026-11-10",
@@ -219,7 +218,7 @@ describe("buildSchedule with mixed sources", () => {
 });
 
 describe("validateAdhocStay", () => {
-  const valid = { check_in: "2026-11-03", check_out: "2026-11-10", label: "Test stay" };
+  const valid = { check_in: "2026-11-03", check_out: "2026-11-10" };
 
   it("accepts a valid stay", () => {
     expect(validateAdhocStay(valid)).toEqual([]);
@@ -242,12 +241,8 @@ describe("validateAdhocStay", () => {
     expect(validateAdhocStay({ ...valid, check_out: "2026-13-01" })[0]).toContain("not a real");
   });
 
-  it("rejects a blank label", () => {
-    expect(validateAdhocStay({ ...valid, label: "   " })).toEqual(["Label must not be empty."]);
-  });
-
   it("reports every problem at once", () => {
-    expect(validateAdhocStay({ check_in: "x", check_out: "y", label: "" })).toHaveLength(3);
+    expect(validateAdhocStay({ check_in: "x", check_out: "y" })).toHaveLength(2);
   });
 });
 
@@ -277,7 +272,7 @@ describe("findOverlaps", () => {
 });
 
 describe("describeVisibility", () => {
-  const stay = (check_in: string, check_out: string) => ({ check_in, check_out, label: "Test" });
+  const stay = (check_in: string, check_out: string) => ({ check_in, check_out });
 
   it("reports a stay inside the window", () => {
     expect(describeVisibility(stay("2026-06-10", "2026-06-15"), NOW)).toBe(

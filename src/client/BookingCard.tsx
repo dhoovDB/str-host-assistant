@@ -3,8 +3,7 @@ import type { Booking, ChecklistKey } from "./types";
 import { Checklist } from "./Checklist";
 import { formatDate } from "./dates";
 
-function StatusBadge({ status }: { status: Booking["status"] }) {
-  const isActive = status === "Active";
+function Badge({ text, tone }: { text: string; tone: "green" | "blue" | "yellow" }) {
   return (
     <span
       style={{
@@ -12,11 +11,11 @@ function StatusBadge({ status }: { status: Booking["status"] }) {
         fontWeight: 600,
         padding: "2px 8px",
         borderRadius: 999,
-        background: isActive ? "var(--color-status-green-bg)" : "var(--color-status-blue-bg)",
-        color: isActive ? "var(--color-status-green-fg)" : "var(--color-status-blue-fg)",
+        background: `var(--color-status-${tone}-bg)`,
+        color: `var(--color-status-${tone}-fg)`,
       }}
     >
-      {status}
+      {text}
     </span>
   );
 }
@@ -107,24 +106,10 @@ export function BookingCard({
               expose names or party size. Restore this line when the Airbnb API
               integration lands (v2+) or remove permanently if not pursued.
               Original: {booking.guestName} · {booking.guests} {booking.guests === 1 ? "guest" : "guests"} */}
-          {isAdhoc && booking.label}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-          {isAdhoc && (
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                padding: "2px 8px",
-                borderRadius: 999,
-                background: "var(--color-step-incomplete-bg)",
-                color: "var(--color-step-incomplete-fg)",
-              }}
-            >
-              Ad hoc
-            </span>
-          )}
-          <StatusBadge status={booking.status} />
+          {isAdhoc && <Badge text="Ad hoc" tone="yellow" />}
+          <Badge text={booking.status} tone={booking.status === "Active" ? "green" : "blue"} />
         </div>
       </div>
       <div style={{ fontSize: 13, color: "var(--color-text-primary)", marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>

@@ -66,7 +66,6 @@ export function adhocToBooking(stay: AdhocStay): Booking {
   return {
     id: stay.id,
     source: "adhoc",
-    label: stay.label,
     guestName: "Guest",
     guests: 1,
     reservationUrl: "",
@@ -90,7 +89,6 @@ export function validateAdhocStay(stay: Omit<AdhocStay, "id">): string[] {
   if (checkInValid && checkOutValid && stay.check_out <= stay.check_in) {
     problems.push("Check-out must be after check-in.");
   }
-  if (!stay.label.trim()) problems.push("Label must not be empty.");
   return problems;
 }
 

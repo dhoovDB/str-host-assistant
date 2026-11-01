@@ -84,11 +84,10 @@ export const demoBookings: Booking[] = [
     notes: "",
   },
   {
-    // Off-platform stay. Shows the label and "Ad hoc" tag with no Airbnb link.
+    // Off-platform stay. Shows the yellow "Ad hoc" tag with no Airbnb link.
     // Keep it last: the hydration smoke test addresses the card above by index.
     id: "adhoc-demo",
     source: "adhoc",
-    label: "Family visit",
     guestName: "Guest",
     guests: 1,
     reservationUrl: "",

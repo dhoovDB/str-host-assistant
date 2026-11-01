@@ -7,7 +7,6 @@ test("ad hoc stay renders as a tagged card with no Airbnb link", async ({ page }
   await page.goto("/");
 
   await expect(page.getByText("Ad hoc", { exact: true })).toHaveCount(1);
-  await expect(page.getByText("Family visit", { exact: true })).toBeVisible();
   await expect(page.getByText("4 nights · Jun 4 → Jun 8")).toBeVisible();
 
   // Four cards, but only the three Airbnb stays link out.

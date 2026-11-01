@@ -153,7 +153,7 @@ export async function upsertBookingNote(
 export async function getAdhocStays(propertyId: string): Promise<AdhocStay[]> {
   const { data, error } = await getSupabase()
     .from("adhoc_stays")
-    .select("id, check_in, check_out, label")
+    .select("id, check_in, check_out")
     .eq("property_id", propertyId)
     .order("check_in");
   if (error) throw error;
@@ -167,7 +167,7 @@ export async function createAdhocStay(
   const { data, error } = await getSupabase()
     .from("adhoc_stays")
     .insert({ property_id: propertyId, ...stay })
-    .select("id, check_in, check_out, label")
+    .select("id, check_in, check_out")
     .single();
   if (error) throw error;
   return data;
@@ -185,7 +185,7 @@ export async function updateAdhocStay(
     .update(stay)
     .eq("property_id", propertyId)
     .eq("id", id)
-    .select("id, check_in, check_out, label")
+    .select("id, check_in, check_out")
     .maybeSingle();
   if (error) throw error;
   return data;

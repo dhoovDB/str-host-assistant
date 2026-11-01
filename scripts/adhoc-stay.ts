@@ -2,9 +2,9 @@
 // enter one: the dashboard has no form (ROADMAP decision log 2026-11-01). The
 // /adhocstay slash command is the runbook that drives it. Run from the repo root:
 //
-//   node --env-file=.env scripts/adhoc-stay.ts add --check-in 2026-11-03 --check-out 2026-11-10 --label "Name"
+//   node --env-file=.env scripts/adhoc-stay.ts add --check-in 2026-11-03 --check-out 2026-11-10
 //   node --env-file=.env scripts/adhoc-stay.ts list
-//   node --env-file=.env scripts/adhoc-stay.ts update <id> [--check-in ...] [--check-out ...] [--label ...]
+//   node --env-file=.env scripts/adhoc-stay.ts update <id> [--check-in ...] [--check-out ...]
 //   node --env-file=.env scripts/adhoc-stay.ts delete <id>
 //
 // Output stays ASCII: the Windows console mangles anything else.
@@ -26,9 +26,9 @@ import {
 import type { AdhocStay } from "../src/client/types";
 
 const USAGE = `Usage:
-  add --check-in YYYY-MM-DD --check-out YYYY-MM-DD --label "Name"
+  add --check-in YYYY-MM-DD --check-out YYYY-MM-DD
   list
-  update <id> [--check-in YYYY-MM-DD] [--check-out YYYY-MM-DD] [--label "Name"]
+  update <id> [--check-in YYYY-MM-DD] [--check-out YYYY-MM-DD]
   delete <id>`;
 
 function nightsBetween(stay: Omit<AdhocStay, "id">): number {
@@ -38,7 +38,7 @@ function nightsBetween(stay: Omit<AdhocStay, "id">): number {
 function describe(stay: AdhocStay): string {
   const nights = nightsBetween(stay);
   return [
-    `${stay.label}: ${stay.check_in} to ${stay.check_out} (${nights} ${nights === 1 ? "night" : "nights"})`,
+    `${stay.check_in} to ${stay.check_out} (${nights} ${nights === 1 ? "night" : "nights"})`,
     `  id: ${stay.id}`,
     `  ${describeVisibility(stay)}`,
   ].join("\n");
@@ -71,7 +71,7 @@ async function warnOnOverlaps(
     console.log(`WARNING: could not check against Airbnb reservations (${String(err)}).`);
   }
   for (const other of findOverlaps(dates, others)) {
-    const source = other.source === "adhoc" ? `ad hoc stay "${other.label}"` : "Airbnb reservation";
+    const source = other.source === "adhoc" ? "ad hoc stay" : "Airbnb reservation";
     console.log(`WARNING: overlaps ${source}, ${other.checkIn} to ${other.checkOut}.`);
   }
 }
@@ -82,7 +82,6 @@ async function main(): Promise<void> {
     options: {
       "check-in": { type: "string" },
       "check-out": { type: "string" },
-      label: { type: "string" },
     },
   });
   const [command, id] = positionals;
@@ -93,7 +92,6 @@ async function main(): Promise<void> {
       const stay = {
         check_in: values["check-in"] ?? "",
         check_out: values["check-out"] ?? "",
-        label: (values.label ?? "").trim(),
       };
       assertValid(stay);
       await warnOnOverlaps(stay, await getAdhocStays(propertyId));
@@ -114,7 +112,6 @@ async function main(): Promise<void> {
       const stay = {
         check_in: values["check-in"] ?? current.check_in,
         check_out: values["check-out"] ?? current.check_out,
-        label: (values.label ?? current.label).trim(),
       };
       assertValid(stay);
       await warnOnOverlaps(

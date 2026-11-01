@@ -21,7 +21,7 @@ describe("adhoc-stay script", () => {
 
   it("rejects bad input before touching the database", () => {
     const { status, stderr } = run(
-      ["add", "--check-in", "2026-02-30", "--check-out", "2026-03-02", "--label", "Test"],
+      ["add", "--check-in", "2026-02-30", "--check-out", "2026-03-02"],
       { PROPERTY_ID: "test" },
     );
     expect(stderr).toContain('Check-in "2026-02-30" is not a real YYYY-MM-DD date.');
