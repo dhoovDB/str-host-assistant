@@ -13,14 +13,6 @@ import type { BriefingRules } from "../config/briefing-rules";
 // When a briefing feels wrong, the feedback loop (thumbs-down → review
 // briefing_feedback after 2 weeks → adjust rules) is the intended fix path.
 // Edit this engine only when the data the briefing CAN see is wrong.
-//
-// Test cases (inline per ROADMAP — promote to real tests in v2):
-//   - Empty bookings + empty gaps → still produces a coherent prompt
-//   - rules.includeTurnovers=false → booking section omitted
-//   - rules.includeGaps=false → gap section omitted
-//   - rules.gapFlagThreshold=2, gap with nights=1 → "[PROMPT EMPHASIS]" present
-//   - rules.customRules with 3 entries → all 3 appear under "Custom rules"
-//   - Booking with sameDayTurnaround=true → mentioned in booking line
 
 export type BuildPromptInput = {
   bookings: Booking[];

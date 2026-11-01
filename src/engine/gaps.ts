@@ -11,17 +11,6 @@ import type { Booking } from "../client/types";
 // 4-week window filter happens upstream in parseCalendar; if you have an
 // empty stretch at the start or end of the window, it won't appear here.
 // Revisit if surfacing those becomes useful daily.
-//
-// Test cases (inline per ROADMAP — promote to real tests when v2 automated
-// tests land):
-//   - Empty bookings → []
-//   - One booking → []
-//   - Two back-to-back (checkOut === next.checkIn) → []
-//   - Single-night gap, minStay 3 → 1 entry, flagged
-//   - Multi-night gap below minStay → flagged
-//   - Multi-night gap at or above minStay → not flagged
-//   - Three bookings with two gaps of mixed flag → both emitted, correct flags
-//   - Unsorted input → still produces correct gaps (defensive sort inside)
 
 export type BookingGap = {
   /** ISO date — the previous booking's checkOut. */

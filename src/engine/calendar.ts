@@ -26,21 +26,6 @@ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "
  *   guestName "Guest", guests 1, checklist all-false, notes "".
  * Supabase wiring in Task 9 fills in the real values for checklist/notes.
  * guestName/guests remain placeholders until/unless we add the Airbnb API.
- *
- * Test cases worth covering when automated tests land (v2):
- *   - Empty feed → []
- *   - Reservation entirely in the past → []
- *   - Reservation two weeks out → 1 booking, status Upcoming, sameDay false
- *   - Back-to-back reservations → both included; INCOMING booking gets
- *     sameDayTurnaround=true (its checkIn matches the previous checkOut).
- *     The outgoing side's turnover string still mentions the same-day
- *     situation when the booking is Active, so the host sees a tight-
- *     cleaning-window hint during the current stay even though the 🚨
- *     flag sits on the next card. (User choice 2026-05-16, see chat history.)
- *   - Reservation overlapping today → status Active
- *   - Block entry (SUMMARY contains "Not available") → dropped
- *   - Reservation with non-HM UID but HM code in DESCRIPTION → reservationUrl
- *     uses the description code
  */
 export function parseCalendar(icalText: string, now: Date = new Date()): Booking[] {
   const unfolded = icalText.replace(/\r\n/g, "\n").replace(/\n[ \t]/g, "");

@@ -316,8 +316,8 @@ v1 shipped without tests deliberately — the surface was too small to justify t
 
 Coverage targets:
 
-- **Engine unit tests — write the harness *before* the first engine change.** Pure functions in `src/engine/` (`parseCalendar`, `computeGaps`, `buildPrompt`) get input-output unit tests. Task 4 already has cases sketched in comments — promote them to a real Vitest file. Trigger: the first v2 feature that modifies the engine (e.g. PriceLabs feeding the gaps table, or recurring-maintenance reshaping the data model). Net first, then change — so regressions surface as you edit.
-- **Config validator tests.** Bad JSON shapes throw with the expected message; lazy env loaders return the expected value when env is set and throw with a clear message when not. Fold into the same harness PR once Vitest exists.
+- **Engine unit tests — ✅ DONE (2026-11-01).** Pure functions in `src/engine/` have input-output Vitest tests (`npm test`), promoted from the cases sketched in comments. The trigger turned out to be ad hoc stays, the first feature to modify the engine. Net first, then change.
+- **Config validator tests.** Bad JSON shapes throw with the expected message; lazy env loaders return the expected value when env is set and throw with a clear message when not. Not done yet; the Vitest harness now exists, so these can land any time.
 
 Frameworks: Playwright for the smoke test (already stood up by the pre-v2 hardening item), Vitest for unit tests. **Reuse:** banking-empire already runs 88 Vitest tests on the same config-as-data / pure-engine architecture — lift its Vitest setup rather than configuring from scratch; the `tdd-guide` skill matches when you start. Run locally; CI later if we add it.
 
