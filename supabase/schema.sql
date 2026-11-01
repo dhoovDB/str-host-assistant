@@ -1,10 +1,11 @@
 -- str-host-assistant — Supabase schema for v1
 --
 -- Run this once in the Supabase SQL editor after creating your project.
--- All four tables are required:
+-- All five tables are required:
 --   - checklist_state, briefings, briefing_feedback are specced in
 --     ROADMAP Task 2 (the briefing + cleaner-coordination loop).
 --   - booking_notes was added in Task 9 for the per-booking notes textarea.
+--   - adhoc_stays holds off-platform stays (block at the end of this file).
 --
 -- Security model: permissive RLS (the anon role can read/write everything).
 -- The "secret" is the dashboard URL itself, not row-level scoping. See
@@ -71,3 +72,23 @@ create policy "anon all" on checklist_state for all using (true);
 create policy "anon all" on briefings for all using (true);
 create policy "anon all" on briefing_feedback for all using (true);
 create policy "anon all" on booking_notes for all using (true);
+
+-- Stays arranged outside Airbnb, merged with the iCal feed at load time. The id
+-- doubles as the booking_id in checklist_state and booking_notes. See ROADMAP
+-- decision log 2026-11-01.
+--
+-- Migration for databases created before this table existed. Apply this block on
+-- its own in the Supabase SQL editor BEFORE deploying the code that reads it, or
+-- the dashboard loader fails. Idempotent — safe to run more than once.
+create table if not exists adhoc_stays (
+  id text primary key default ('adhoc-' || gen_random_uuid()::text),
+  property_id text not null,
+  check_in date not null,
+  check_out date not null,
+  label text not null,
+  created_at timestamptz not null default now(),
+  check (check_out > check_in)
+);
+alter table adhoc_stays enable row level security;
+drop policy if exists "anon all" on adhoc_stays;
+create policy "anon all" on adhoc_stays for all using (true);

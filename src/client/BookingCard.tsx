@@ -70,6 +70,8 @@ export function BookingCard({
     }, 1000);
   };
 
+  const isAdhoc = booking.source === "adhoc";
+
   const iconClass =
     saveStatus === "saving"
       ? "ti ti-loader-2"
@@ -105,19 +107,38 @@ export function BookingCard({
               expose names or party size. Restore this line when the Airbnb API
               integration lands (v2+) or remove permanently if not pursued.
               Original: {booking.guestName} · {booking.guests} {booking.guests === 1 ? "guest" : "guests"} */}
+          {isAdhoc && booking.label}
         </div>
-        <StatusBadge status={booking.status} />
+        <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+          {isAdhoc && (
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                padding: "2px 8px",
+                borderRadius: 999,
+                background: "var(--color-step-incomplete-bg)",
+                color: "var(--color-step-incomplete-fg)",
+              }}
+            >
+              Ad hoc
+            </span>
+          )}
+          <StatusBadge status={booking.status} />
+        </div>
       </div>
       <div style={{ fontSize: 13, color: "var(--color-text-primary)", marginTop: 4, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
         <span>{booking.nights} {booking.nights === 1 ? "night" : "nights"} · {formatDate(booking.checkIn)} → {formatDate(booking.checkOut)}</span>
-        <a
-          href={booking.reservationUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ fontSize: 12, color: "var(--color-teal)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 600 }}
-        >
-          View on Airbnb <i className="ti ti-external-link" style={{ fontSize: 12 }} />
-        </a>
+        {!isAdhoc && (
+          <a
+            href={booking.reservationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: 12, color: "var(--color-teal)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 3, fontWeight: 600 }}
+          >
+            View on Airbnb <i className="ti ti-external-link" style={{ fontSize: 12 }} />
+          </a>
+        )}
       </div>
       <div style={{ fontSize: 13, color: "var(--color-text-muted)", marginTop: 4 }}>
         Turnover window: {booking.turnover}

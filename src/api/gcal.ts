@@ -1,5 +1,5 @@
 import { getIcalUrl } from "../config/property";
-import { parseCalendar } from "../engine/calendar";
+import { parseIcal } from "../engine/calendar";
 import type { Booking } from "../client/types";
 
 // fetchBookings is server-only by convention. It reads ICAL_URL via
@@ -15,5 +15,5 @@ export async function fetchBookings(): Promise<Booking[]> {
     );
   }
   const text = await response.text();
-  return parseCalendar(text);
+  return parseIcal(text);
 }

@@ -46,7 +46,8 @@ export function buildPrompt(input: BuildPromptInput): string {
       lines.push(`Bookings in the 4-week window (${bookings.length} total):`);
       for (const b of bookings) {
         const sameDayNote = b.sameDayTurnaround ? ", same-day arrival (previous guest leaves the same day)" : "";
-        lines.push(`- ${b.checkIn} → ${b.checkOut}, ${b.nights} nights, status ${b.status}${sameDayNote}`);
+        const adhocNote = b.source === "adhoc" ? `, off-platform stay (${b.label})` : "";
+        lines.push(`- ${b.checkIn} → ${b.checkOut}, ${b.nights} nights, status ${b.status}${sameDayNote}${adhocNote}`);
       }
     }
     lines.push("");

@@ -8,6 +8,7 @@ import type { Booking, ChecklistKey, Gap } from "@/client/types";
 import { formatDate } from "@/client/dates";
 import { fetchBookings } from "@/api/gcal";
 import { generateBriefing } from "@/api/claude";
+import { adhocToBooking, buildSchedule } from "@/engine/calendar";
 import { computeGaps } from "@/engine/gaps";
 import { buildPrompt } from "@/engine/briefing";
 import { propertyConfig, getPropertyId, isDemoMode } from "@/config/property";
@@ -22,6 +23,7 @@ import {
   upsertChecklist,
   getBookingNote,
   upsertBookingNote,
+  getAdhocStays,
 } from "@/db/supabase";
 
 const tablerCss = "https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css";
@@ -45,8 +47,12 @@ const loadDashboardData = createServerFn({ method: "GET" }).handler(async () => 
     return { bookings: demoBookings, gaps: demoGaps, briefing: demoBriefing };
   }
 
-  const rawBookings = await fetchBookings();
   const propertyId = getPropertyId();
+  const [airbnbStays, adhocStays] = await Promise.all([
+    fetchBookings(),
+    getAdhocStays(propertyId),
+  ]);
+  const rawBookings = buildSchedule([...airbnbStays, ...adhocStays.map(adhocToBooking)]);
 
   // Hydrate each booking with its Supabase-persisted checklist state and notes.
   // Parallel per-booking fetches — for ~4 bookings this is ~8 round trips, fine
@@ -115,10 +121,10 @@ const loadDashboardData = createServerFn({ method: "GET" }).handler(async () => 
   // Card display rules per ROADMAP Task 9:
   // - Hide if the booking's `reviewed` step is checked.
   // - Hide if ≥7 days have passed since checkout. (Forward-compat — given
-  //   parseCalendar's current `checkOut >= today` filter, nothing in
+  //   buildSchedule's current `checkOut >= today` filter, nothing in
   //   enrichedBookings is ever past checkout today, so this branch is dead
   //   code at v1. Kept so the rule survives a future fetch-window widening.)
-  // - Sort by check-in ascending (already done by parseCalendar).
+  // - Sort by check-in ascending (already done by buildSchedule).
   // - Take the first 3 surviving bookings.
   // Gaps engine sees all rawBookings (full window) — display filtering is a
   // render-time slice, not a fetch-time filter (ROADMAP decision 2026-05-16).

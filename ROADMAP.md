@@ -203,14 +203,13 @@ A real gap in the live v1, found 2026-10-25: the dashboard cannot represent a st
 
 **Example that triggered this.** Two friends are staying in the unit **Tue Nov 3 → Tue Nov 10, 2026 (7 nights)**, paying by Venmo or Zelle. It's not an Airbnb reservation, so the host blocks the dates on Airbnb and tracks the stay somewhere else by hand. The turnovers on each side still need the cleaner, and the dashboard shows none of it.
 
-**Done when.** The host can add an ad hoc stay (dates + short label + optional notes) from the dashboard. After that it appears as a booking card with the normal cleaner checklist and notes, it closes the gap it covers in the gaps table, and the briefing treats it like any other stay (arrival, departure, adjacent turnovers). Ad hoc cards are visually marked as off-platform and link nowhere on Airbnb.
+**Done when.** The host can tell Claude about an ad hoc stay in a repeatable way (dates + short label). After that it appears as a booking card with the normal cleaner checklist and notes, it closes the gap it covers in the gaps table, and the briefing treats it like any other stay (arrival, departure, adjacent turnovers). Ad hoc cards carry an "Ad hoc" tag and link nowhere on Airbnb. Design decisions are in the decision log, 2026-11-01.
 
-**Open design questions (decide in the implementing session):**
-- **Source of truth:** a new Supabase table (e.g. `adhoc_stays`: `property_id`, `id`, `check_in`, `check_out`, `label`, `notes`), merged with iCal bookings server-side. Or: promote Airbnb "Blocked" entries to stays and let the host label them. Supabase is the likely fit: blocks don't carry labels, and blocking is also used for non-stay reasons.
-- **Merge point:** keep `parseCalendar` Airbnb-only and merge ad hoc stays afterwards, before `annotateTurnover` / `computeGaps`. That way turnover and gap logic covers both sources. Watch for overlaps with a real reservation (warn, don't silently drop).
-- **IDs:** checklist state and notes key off `booking_id` (today the iCal UID). Ad hoc stays need a stable, non-colliding ID (e.g. `adhoc-<uuid>`).
-- **Entry UI:** a minimal add/edit/delete form. No auth beyond the existing secret-URL model.
-- **Gate:** merging ad hoc stays before `annotateTurnover` / `computeGaps` changes what the engine processes. If it modifies anything in `src/engine/`, the v2 "Automated tests" rule fires first: stand up the Vitest harness *before* the engine change (lift banking-empire's setup).
+**Progress:**
+- ✅ Vitest harness on the current engine.
+- ✅ Read path: `adhoc_stays` table, merge before `buildSchedule`, card tag, briefing line. Verified in demo mode only so far.
+- ⬜ Write path: script and `/adhocstay` command.
+- ⬜ Live: migration applied, deployed, first real stay added.
 
 ---
 
@@ -496,6 +495,15 @@ A short record of architectural choices that aren't obvious from the code. Add e
 ### 2026-10-04 — Feedback review triggered by votes, not the calendar
 Round 2 found 0 unhelpful votes in 14 weeks (3 helpful votes total), so the fixed 2-week review mostly produced empty runs. The review now runs once 3 or more new unhelpful votes accumulate since the last review. Updated in CLAUDE.md (Feedback mechanism), config/README.md and the retention constraint below. The v2 "Claude-powered briefing rule tuning" cron keeps its own cadence decision.
 
+### 2026-11-01 — Ad hoc stays: a Supabase table, entered by telling Claude
+- **Rule: a stay Airbnb doesn't know about lives in `adhoc_stays` and is merged with the iCal feed before anything is computed.** Airbnb blocks stay dropped, because they carry no label and are also used for non-stay reasons.
+- **No dashboard UI for entry (owner's call).** The original item proposed an add/edit/delete form. Ad hoc stays are rare, and telling Claude is enough as long as it's repeatable, so entry goes through a script behind a slash command. That removes the form, the server functions, and the post-save refresh work.
+- **The table's primary key is the booking id** (`adhoc-<uuid>`), so `checklist_state` and `booking_notes` work unchanged with no mapping. There's no `notes` column for the same reason: the card's existing notes field covers it.
+- **`parseCalendar` split into `parseIcal` and `buildSchedule`.** Windowing, sorting and turnover annotation now run on the merged list, so same-day flags work across both sources.
+- **`computeGaps` measures from the latest checkout so far.** Overlaps are now possible, and measuring from the previous booking opened a false gap around a stay nested inside another.
+- **Display rules unchanged.** Ad hoc stays follow the same 4-week window and 3-card cap as Airbnb stays.
+- **Guest names stay out of this public repo.** Labels live in Supabase only. They do reach the Claude API through the briefing prompt and are stored in `briefings.context`.
+
 ---
 
-*Last updated: 2026-10-04 (briefing feedback review round 2; vote-triggered review)*
+*Last updated: 2026-11-01 (ad hoc stays: read path)*

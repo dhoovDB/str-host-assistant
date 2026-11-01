@@ -12,6 +12,7 @@ export const demoBookings: Booking[] = [
     // Active stay, currently in-house. Shows the green "Active" badge and a
     // completed cleaner row with the guest-stay row mid-progress (checked in).
     id: "demo-active",
+    source: "airbnb",
     guestName: "Demo Guest",
     guests: 2,
     reservationUrl: HOST_CALENDAR_URL,
@@ -37,6 +38,7 @@ export const demoBookings: Booking[] = [
     // Drives the 🚨 alert and the "10am–3pm cleaning window" warning. Cleaner
     // notified + confirmed, but reminder/ready still pending.
     id: "demo-turnaround",
+    source: "airbnb",
     guestName: "Demo Guest",
     guests: 4,
     reservationUrl: HOST_CALENDAR_URL,
@@ -60,6 +62,7 @@ export const demoBookings: Booking[] = [
   {
     // Normal upcoming stay, nothing actioned yet — shows an empty checklist.
     id: "demo-upcoming",
+    source: "airbnb",
     guestName: "Demo Guest",
     guests: 3,
     reservationUrl: HOST_CALENDAR_URL,
@@ -71,6 +74,32 @@ export const demoBookings: Booking[] = [
     sameDayTurnaround: false,
     checklist: {
       notified: false,
+      confirmed: false,
+      reminder: false,
+      ready: false,
+      checkedIn: false,
+      checkedOut: false,
+      reviewed: false,
+    },
+    notes: "",
+  },
+  {
+    // Off-platform stay. Shows the label and "Ad hoc" tag with no Airbnb link.
+    // Keep it last: the hydration smoke test addresses the card above by index.
+    id: "adhoc-demo",
+    source: "adhoc",
+    label: "Family visit",
+    guestName: "Guest",
+    guests: 1,
+    reservationUrl: "",
+    checkIn: "2026-06-04",
+    checkOut: "2026-06-08",
+    nights: 4,
+    turnover: "Check-in 3pm Jun 4",
+    status: "Upcoming",
+    sameDayTurnaround: false,
+    checklist: {
+      notified: true,
       confirmed: false,
       reminder: false,
       ready: false,

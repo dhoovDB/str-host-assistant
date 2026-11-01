@@ -82,6 +82,16 @@ describe("buildPrompt", () => {
     expect(prompt).toContain("same-day arrival (previous guest leaves the same day)");
   });
 
+  it("marks an ad hoc stay as off-platform with its label", () => {
+    const bookings = [{ ...BOOKING, source: "adhoc", label: "Test stay" } as Booking];
+    expect(buildPrompt(input({ bookings }))).toContain(", off-platform stay (Test stay)");
+  });
+
+  it("does not mark a reservation as off-platform", () => {
+    const bookings = [{ ...BOOKING, source: "airbnb" } as Booking];
+    expect(buildPrompt(input({ bookings }))).not.toContain("off-platform");
+  });
+
   it("reports completed checklist steps per booking", () => {
     const checklistState = {
       b1: {

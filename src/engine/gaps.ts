@@ -8,7 +8,7 @@ import type { Booking } from "../client/types";
 //
 // Scope per Task 4 spec: gaps BETWEEN consecutive bookings only — the function
 // does not emit "before first booking" or "after last booking" gaps. The
-// 4-week window filter happens upstream in parseCalendar; if you have an
+// 4-week window filter happens upstream in buildSchedule; if you have an
 // empty stretch at the start or end of the window, it won't appear here.
 // Revisit if surfacing those becomes useful daily.
 
@@ -26,15 +26,19 @@ export type BookingGap = {
 export function computeGaps(bookings: Booking[], minStay: number): BookingGap[] {
   if (bookings.length < 2) return [];
   // Defensive sort — the engine layer shouldn't rely on caller correctness
-  // even though parseCalendar() does sort. Cheap for the small N here.
+  // even though buildSchedule() does sort. Cheap for the small N here.
   const sorted = [...bookings].sort((a, b) => a.checkIn.localeCompare(b.checkIn));
   const gaps: BookingGap[] = [];
-  for (let i = 0; i < sorted.length - 1; i++) {
-    const startDate = sorted[i].checkOut;
-    const endDate = sorted[i + 1].checkIn;
-    const nights = diffDays(startDate, endDate);
-    if (nights <= 0) continue;
-    gaps.push({ startDate, endDate, nights, flagged: nights < minStay });
+  // Measure from the latest checkout so far, not the previous booking's: an ad
+  // hoc stay can overlap a reservation, and one nested inside another must not
+  // open a gap that the longer stay still covers.
+  let startDate = sorted[0].checkOut;
+  for (const { checkIn, checkOut } of sorted.slice(1)) {
+    const nights = diffDays(startDate, checkIn);
+    if (nights > 0) {
+      gaps.push({ startDate, endDate: checkIn, nights, flagged: nights < minStay });
+    }
+    if (checkOut > startDate) startDate = checkOut;
   }
   return gaps;
 }

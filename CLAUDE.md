@@ -18,7 +18,7 @@ Property-specific values live in `config/property.json`: property name, cleaner 
 
 **Engine functions are pure.**
 
-`parseCalendar`, `computeGaps`, and `buildPrompt` take inputs and return outputs. No API calls, no file reads, no state mutation. API calls are isolated in `src/api/`. Database writes are isolated in `src/db/`.
+`parseIcal`, `buildSchedule`, `computeGaps`, and `buildPrompt` take inputs and return outputs. No API calls, no file reads, no state mutation. API calls are isolated in `src/api/`. Database writes are isolated in `src/db/`.
 
 **API keys never touch the browser.**
 
@@ -68,12 +68,12 @@ When asking the user to validate visually, provide a numbered checklist of exact
 config/property.json            ← property name, cleaner name, min stay
 config/briefing-rules.json      ← briefing behavior (thresholds, tone)
 src/config/                     ← typed loaders that validate config/*.json
-src/engine/calendar.ts          ← parse iCal feed into bookings (pure)
+src/engine/calendar.ts          ← parse iCal feed, merge ad hoc stays into a schedule (pure)
 src/engine/gaps.ts              ← compute open gaps between bookings (pure)
 src/engine/briefing.ts          ← buildPrompt from config + state (pure)
 src/api/claude.ts               ← Claude API call, isolated
 src/api/gcal.ts                 ← Google Calendar fetch, isolated
-src/db/supabase.ts              ← checklist + feedback read/write
+src/db/supabase.ts              ← checklist + feedback + ad hoc stays read/write
 src/server/routes.ts            ← API routes
 src/client/                     ← React components
 ```

@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { ChecklistKey } from "../client/types";
+import type { AdhocStay, ChecklistKey } from "../client/types";
 
 // Lazy client construction. Reading SUPABASE_* and constructing the client must
 // NOT happen at module load: this module sits in the route's import graph, so an
@@ -146,6 +146,18 @@ export async function upsertBookingNote(
       { onConflict: "property_id,booking_id" },
     );
   if (error) throw error;
+}
+
+// --- adhoc_stays -----------------------------------------------------------
+
+export async function getAdhocStays(propertyId: string): Promise<AdhocStay[]> {
+  const { data, error } = await getSupabase()
+    .from("adhoc_stays")
+    .select("id, check_in, check_out, label")
+    .eq("property_id", propertyId)
+    .order("check_in");
+  if (error) throw error;
+  return data ?? [];
 }
 
 // --- briefings -------------------------------------------------------------

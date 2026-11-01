@@ -9,6 +9,9 @@ export type ChecklistKey =
 
 export type Booking = {
   id: string;
+  source: "airbnb" | "adhoc";
+  // Short host-entered name for an ad hoc stay. Airbnb's feed carries no equivalent.
+  label?: string;
   guestName: string;
   guests: number;
   reservationUrl: string;
@@ -21,6 +24,14 @@ export type Booking = {
   checklist: Record<ChecklistKey, boolean>;
   sameDayTurnaround?: boolean;
   notes: string;
+};
+
+// An off-platform stay as stored in the adhoc_stays table.
+export type AdhocStay = {
+  id: string;
+  check_in: string;
+  check_out: string;
+  label: string;
 };
 
 export type Gap = {

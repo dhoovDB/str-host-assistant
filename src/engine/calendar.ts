@@ -1,4 +1,4 @@
-import type { Booking } from "../client/types";
+import type { AdhocStay, Booking, ChecklistKey } from "../client/types";
 
 // iCal parsing — hand-rolled per decision log 2026-05-13. Airbnb's host export
 // uses a small, predictable subset of RFC 5545: date-only DTSTART/DTEND,
@@ -10,33 +10,74 @@ const HM_CODE = /HM[A-Z0-9]+/;
 const FOUR_WEEKS_MS = 28 * 24 * 60 * 60 * 1000;
 const FALLBACK_RESERVATION_URL = "https://www.airbnb.com/hosting/calendar";
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const EMPTY_CHECKLIST: Record<ChecklistKey, boolean> = {
+  notified: false,
+  confirmed: false,
+  reminder: false,
+  ready: false,
+  checkedIn: false,
+  checkedOut: false,
+  reviewed: false,
+};
 
 /**
- * Parse an Airbnb host iCal export into Booking objects.
+ * Parse an Airbnb host iCal export into unwindowed, unannotated Booking objects.
  *
  * Pipeline:
  *   1. Unfold RFC 5545 continuation lines.
  *   2. Split into VEVENT blocks.
  *   3. Drop non-reservation entries (host blocks, "not available").
- *   4. Filter to a 4-week window starting at `now`.
- *   5. Sort by checkIn ascending.
- *   6. Derive sameDayTurnaround / status / turnover from consecutive bookings.
  *
  * Fields the iCal feed does not carry get safe defaults:
  *   guestName "Guest", guests 1, checklist all-false, notes "".
  * Supabase wiring in Task 9 fills in the real values for checklist/notes.
  * guestName/guests remain placeholders until/unless we add the Airbnb API.
  */
-export function parseCalendar(icalText: string, now: Date = new Date()): Booking[] {
+export function parseIcal(icalText: string): Booking[] {
   const unfolded = icalText.replace(/\r\n/g, "\n").replace(/\n[ \t]/g, "");
   const reservations: Booking[] = [];
   for (const block of extractVEvents(unfolded)) {
     const r = parseReservation(block);
     if (r) reservations.push(r);
   }
-  const windowed = filterToWindow(reservations, now);
+  return reservations;
+}
+
+/**
+ * Turn stays from any source into the dashboard's schedule. Merge sources before
+ * calling this so turnovers and same-day flags cover all of them.
+ *
+ * Pipeline:
+ *   1. Filter to a 4-week window starting at `now`.
+ *   2. Sort by checkIn ascending.
+ *   3. Derive sameDayTurnaround / status / turnover from consecutive bookings.
+ */
+export function buildSchedule(stays: Booking[], now: Date = new Date()): Booking[] {
+  const windowed = filterToWindow(stays, now);
   windowed.sort((a, b) => a.checkIn.localeCompare(b.checkIn));
   return annotateTurnover(windowed, now);
+}
+
+/**
+ * Map a stay from the adhoc_stays table to a Booking. The row's id is already
+ * `adhoc-<uuid>`, so checklist_state and booking_notes key off it unchanged.
+ */
+export function adhocToBooking(stay: AdhocStay): Booking {
+  return {
+    id: stay.id,
+    source: "adhoc",
+    label: stay.label,
+    guestName: "Guest",
+    guests: 1,
+    reservationUrl: "",
+    checkIn: stay.check_in,
+    checkOut: stay.check_out,
+    nights: diffDays(stay.check_in, stay.check_out),
+    turnover: "",
+    status: "Upcoming",
+    checklist: { ...EMPTY_CHECKLIST },
+    notes: "",
+  };
 }
 
 function extractVEvents(text: string): string[] {
@@ -100,6 +141,7 @@ function parseReservation(block: string): Booking | null {
 
   return {
     id: uid,
+    source: "airbnb",
     guestName: "Guest",
     guests: 1,
     reservationUrl,
@@ -108,15 +150,7 @@ function parseReservation(block: string): Booking | null {
     nights,
     turnover: "",
     status: "Upcoming",
-    checklist: {
-      notified: false,
-      confirmed: false,
-      reminder: false,
-      ready: false,
-      checkedIn: false,
-      checkedOut: false,
-      reviewed: false,
-    },
+    checklist: { ...EMPTY_CHECKLIST },
     notes: "",
   };
 }
