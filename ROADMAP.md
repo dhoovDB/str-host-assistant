@@ -504,8 +504,8 @@ Round 2 found 0 unhelpful votes in 14 weeks (3 helpful votes total), so the fixe
 - **`computeGaps` measures from the latest checkout so far.** Overlaps are now possible, and measuring from the previous booking opened a false gap around a stay nested inside another.
 - **Display rules unchanged.** Ad hoc stays follow the same 4-week window and 3-card cap as Airbnb stays. The script prints when a later stay will show, so it doesn't look lost.
 - **Overlaps warn at entry, and still save.** The script checks the live feed and other ad hoc stays. There's no card warning: once dates are blocked on Airbnb, a reservation can't land on them later. If the feed is down, the script says it couldn't check and saves anyway.
-- **The script runs on Node's built-in TypeScript support, with no new dependency.** `fetchBookings` now takes the iCal URL as an argument, which keeps `src/api/gcal.ts` free of the JSON-backed property config that plain Node can't load.
-- **Guest names stay out of this public repo.** Labels live in Supabase only. They do reach the Claude API through the briefing prompt and are stored in `briefings.context`.
+- **The script runs on Node's built-in TypeScript support, with no new dependency.** `fetchBookings` now takes the iCal URL as an argument, which keeps `src/api/gcal.ts` free of the JSON-backed property config that plain Node can't load. `scripts/adhoc-stay.test.ts` runs the script under plain Node, because `tsc` and Vitest both pass on imports that Node can't resolve.
+- **Guest names stay out of this public repo.** Labels live in Supabase only. They do reach the Claude API through the briefing prompt and are stored in `briefings.context`, and deleting a stay doesn't remove them from past briefings. The cards are the first place guest names appear on the dashboard, whose only access control is the URL.
 
 ---
 

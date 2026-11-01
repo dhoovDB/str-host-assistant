@@ -131,7 +131,7 @@ async function main(): Promise<void> {
       if (!(await deleteAdhocStay(propertyId, id))) {
         throw new Error(`No ad hoc stay with id ${id}.`);
       }
-      console.log(`Deleted ${id}, with its checklist and notes.`);
+      console.log(`Deleted ${id}, with its checklist and notes. Past briefings keep their text.`);
       return;
     }
     default:
