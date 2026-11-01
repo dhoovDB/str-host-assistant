@@ -218,6 +218,25 @@ A real gap in the live v1, found 2026-10-25: the dashboard cannot represent a st
 
 ---
 
+## Next — move the live dashboard to a new worker URL
+
+**Not started.** The live dashboard moves to a new Cloudflare Worker, with a new `workers.dev` URL. It keeps the same Supabase project and `PROPERTY_ID`, so checklists, notes, ad hoc stays and briefings carry over without a data migration.
+
+**Done when.** Host and co-host are both on the new URL, the old worker is deleted, and the worker's name is set from local config instead of `wrangler.jsonc`.
+
+**Steps:**
+1. **Set the name from local config (one commit).** Add `WORKER_NAME` to `.env`, with a blank entry in `.env.example`. Give `wrangler.jsonc` a generic placeholder name, which the build still needs, and have `npm run deploy` pass the real one with `--name`, as `deploy:demo` already does. The deploy must refuse to run when `WORKER_NAME` is unset; otherwise it would create an empty worker under the placeholder. Update the deploy section of `README.md` and the "Demo is a separate worker" decision-log entry to match.
+2. **Create the new worker.** Generate a new name, deploy to it, and set its five secrets with `wrangler secret put --name`: `ANTHROPIC_API_KEY`, `ICAL_URL`, `PROPERTY_ID`, `SUPABASE_KEY`, `SUPABASE_URL`. Use the same values as today, and leave `DEMO_MODE` unset.
+3. **Verify before anyone switches.** The new URL returns the same cards and gaps as the old one. A checklist toggle and a note made on the new URL survive a reload and also show on the old URL, which confirms both read the same data.
+4. **Switch over.** Send the co-host the new link and update bookmarks on every device. Both URLs work during this overlap, with the same data.
+5. **Delete the old worker.** Once the co-host confirms the new link works, run `wrangler delete --name` on the old worker and confirm its URL no longer responds. This can't be undone, so it comes last.
+
+**Unchanged:** the demo worker and its `README.md` link, the Supabase project, application code, and `/adhocstay`, which talks to Supabase directly and doesn't use the dashboard URL.
+
+**Needs owner approval at the time:** the deploy, setting secrets, sending the link, and deleting the old worker.
+
+---
+
 ## Next — pre-v2 hardening
 
 Not a v2 feature — a safety net for the shipped, live v1.
@@ -513,4 +532,4 @@ Round 2 found 0 unhelpful votes in 14 weeks (3 helpful votes total), so the fixe
 
 ---
 
-*Last updated: 2026-11-01 (ad hoc stays live; final checks pending)*
+*Last updated: 2026-11-01 (planned the move to a new worker URL)*
