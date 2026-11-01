@@ -76,7 +76,12 @@ src/api/gcal.ts                 ← Google Calendar fetch, isolated
 src/db/supabase.ts              ← checklist + feedback + ad hoc stays read/write
 src/server/routes.ts            ← API routes
 src/client/                     ← React components
+scripts/adhoc-stay.ts           ← add, list, update, delete ad hoc stays (CLI)
 ```
+
+## Ad hoc stays
+
+Stays arranged outside Airbnb live in the `adhoc_stays` table. There is no entry form on the dashboard: the `/adhocstay` command runs `scripts/adhoc-stay.ts` from this repo's root. Keep guest names out of this public repo, including tests, fixtures and docs.
 
 ## What not to do
 

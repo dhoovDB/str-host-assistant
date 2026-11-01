@@ -11,7 +11,7 @@ import { generateBriefing } from "@/api/claude";
 import { adhocToBooking, buildSchedule } from "@/engine/calendar";
 import { computeGaps } from "@/engine/gaps";
 import { buildPrompt } from "@/engine/briefing";
-import { propertyConfig, getPropertyId, isDemoMode } from "@/config/property";
+import { propertyConfig, getIcalUrl, getPropertyId, isDemoMode } from "@/config/property";
 import { briefingRules } from "@/config/briefing-rules";
 import { demoBookings, demoGaps, demoBriefing } from "@/demo/fixtures";
 import {
@@ -49,7 +49,7 @@ const loadDashboardData = createServerFn({ method: "GET" }).handler(async () => 
 
   const propertyId = getPropertyId();
   const [airbnbStays, adhocStays] = await Promise.all([
-    fetchBookings(),
+    fetchBookings(getIcalUrl()),
     getAdhocStays(propertyId),
   ]);
   const rawBookings = buildSchedule([...airbnbStays, ...adhocStays.map(adhocToBooking)]);

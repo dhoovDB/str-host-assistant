@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { adhocToBooking, buildSchedule, parseIcal } from "./calendar";
+import {
+  adhocToBooking,
+  buildSchedule,
+  describeVisibility,
+  findOverlaps,
+  parseIcal,
+  validateAdhocStay,
+} from "./calendar";
 import type { Booking } from "../client/types";
 
 const NOW = new Date("2026-06-01T12:00:00Z");
@@ -208,5 +215,85 @@ describe("buildSchedule with mixed sources", () => {
   it("applies the 4-week window to ad hoc stays", () => {
     expect(buildSchedule([adhoc("2026-08-01", "2026-08-05")], NOW)).toEqual([]);
     expect(buildSchedule([adhoc("2026-05-01", "2026-05-05")], NOW)).toEqual([]);
+  });
+});
+
+describe("validateAdhocStay", () => {
+  const valid = { check_in: "2026-11-03", check_out: "2026-11-10", label: "Test stay" };
+
+  it("accepts a valid stay", () => {
+    expect(validateAdhocStay(valid)).toEqual([]);
+  });
+
+  it("rejects a check-out on or before check-in", () => {
+    expect(validateAdhocStay({ ...valid, check_out: "2026-11-03" })).toEqual([
+      "Check-out must be after check-in.",
+    ]);
+    expect(validateAdhocStay({ ...valid, check_out: "2026-11-01" })).toHaveLength(1);
+  });
+
+  it("rejects malformed dates", () => {
+    expect(validateAdhocStay({ ...valid, check_in: "Nov 3" })[0]).toContain("not a real");
+    expect(validateAdhocStay({ ...valid, check_in: "" })[0]).toContain("not a real");
+  });
+
+  it("rejects dates that don't exist", () => {
+    expect(validateAdhocStay({ ...valid, check_in: "2026-02-30" })[0]).toContain("not a real");
+    expect(validateAdhocStay({ ...valid, check_out: "2026-13-01" })[0]).toContain("not a real");
+  });
+
+  it("rejects a blank label", () => {
+    expect(validateAdhocStay({ ...valid, label: "   " })).toEqual(["Label must not be empty."]);
+  });
+
+  it("reports every problem at once", () => {
+    expect(validateAdhocStay({ check_in: "x", check_out: "y", label: "" })).toHaveLength(3);
+  });
+});
+
+describe("findOverlaps", () => {
+  const dates = { checkIn: "2026-06-10", checkOut: "2026-06-15" };
+
+  it("does not treat back-to-back stays as overlapping", () => {
+    const stays = [adhoc("2026-06-05", "2026-06-10"), adhoc("2026-06-15", "2026-06-20")];
+    expect(findOverlaps(dates, stays)).toEqual([]);
+  });
+
+  it("finds partial overlaps on either side", () => {
+    const before = adhoc("2026-06-08", "2026-06-11");
+    const after = adhoc("2026-06-14", "2026-06-18");
+    expect(findOverlaps(dates, [before, after])).toEqual([before, after]);
+  });
+
+  it("finds stays nested in either direction", () => {
+    const inside = adhoc("2026-06-11", "2026-06-12");
+    const around = adhoc("2026-06-01", "2026-06-30");
+    expect(findOverlaps(dates, [inside, around])).toEqual([inside, around]);
+  });
+
+  it("ignores stays that don't touch", () => {
+    expect(findOverlaps(dates, [adhoc("2026-07-01", "2026-07-05")])).toEqual([]);
+  });
+});
+
+describe("describeVisibility", () => {
+  const stay = (check_in: string, check_out: string) => ({ check_in, check_out, label: "Test" });
+
+  it("reports a stay inside the window", () => {
+    expect(describeVisibility(stay("2026-06-10", "2026-06-15"), NOW)).toBe(
+      "in the dashboard window now",
+    );
+  });
+
+  it("gives the first date a later stay shows", () => {
+    expect(describeVisibility(stay("2026-08-01", "2026-08-05"), NOW)).toBe(
+      "shows on the dashboard from 2026-07-04",
+    );
+  });
+
+  it("reports a stay in the past", () => {
+    expect(describeVisibility(stay("2026-05-01", "2026-05-05"), NOW)).toBe(
+      "in the past, so it won't show",
+    );
   });
 });

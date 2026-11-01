@@ -208,7 +208,8 @@ A real gap in the live v1, found 2026-10-25: the dashboard cannot represent a st
 **Progress:**
 - ✅ Vitest harness on the current engine.
 - ✅ Read path: `adhoc_stays` table, merge before `buildSchedule`, card tag, briefing line. Verified in demo mode only so far.
-- ⬜ Write path: script and `/adhocstay` command.
+- ✅ Write path: `scripts/adhoc-stay.ts` (add, list, update, delete). Validation and error paths verified; the database round trip waits on the migration.
+- ⬜ `/adhocstay` command in writing-kit.
 - ⬜ Live: migration applied, deployed, first real stay added.
 
 ---
@@ -501,9 +502,11 @@ Round 2 found 0 unhelpful votes in 14 weeks (3 helpful votes total), so the fixe
 - **The table's primary key is the booking id** (`adhoc-<uuid>`), so `checklist_state` and `booking_notes` work unchanged with no mapping. There's no `notes` column for the same reason: the card's existing notes field covers it.
 - **`parseCalendar` split into `parseIcal` and `buildSchedule`.** Windowing, sorting and turnover annotation now run on the merged list, so same-day flags work across both sources.
 - **`computeGaps` measures from the latest checkout so far.** Overlaps are now possible, and measuring from the previous booking opened a false gap around a stay nested inside another.
-- **Display rules unchanged.** Ad hoc stays follow the same 4-week window and 3-card cap as Airbnb stays.
+- **Display rules unchanged.** Ad hoc stays follow the same 4-week window and 3-card cap as Airbnb stays. The script prints when a later stay will show, so it doesn't look lost.
+- **Overlaps warn at entry, and still save.** The script checks the live feed and other ad hoc stays. There's no card warning: once dates are blocked on Airbnb, a reservation can't land on them later. If the feed is down, the script says it couldn't check and saves anyway.
+- **The script runs on Node's built-in TypeScript support, with no new dependency.** `fetchBookings` now takes the iCal URL as an argument, which keeps `src/api/gcal.ts` free of the JSON-backed property config that plain Node can't load.
 - **Guest names stay out of this public repo.** Labels live in Supabase only. They do reach the Claude API through the briefing prompt and are stored in `briefings.context`.
 
 ---
 
-*Last updated: 2026-11-01 (ad hoc stays: read path)*
+*Last updated: 2026-11-01 (ad hoc stays: read and write paths)*

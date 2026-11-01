@@ -160,6 +160,59 @@ export async function getAdhocStays(propertyId: string): Promise<AdhocStay[]> {
   return data ?? [];
 }
 
+export async function createAdhocStay(
+  propertyId: string,
+  stay: Omit<AdhocStay, "id">,
+): Promise<AdhocStay> {
+  const { data, error } = await getSupabase()
+    .from("adhoc_stays")
+    .insert({ property_id: propertyId, ...stay })
+    .select("id, check_in, check_out, label")
+    .single();
+  if (error) throw error;
+  return data;
+}
+
+// Keeps the id, so a changed stay keeps its checklist state and notes. Returns
+// null when no stay has that id.
+export async function updateAdhocStay(
+  propertyId: string,
+  id: string,
+  stay: Omit<AdhocStay, "id">,
+): Promise<AdhocStay | null> {
+  const { data, error } = await getSupabase()
+    .from("adhoc_stays")
+    .update(stay)
+    .eq("property_id", propertyId)
+    .eq("id", id)
+    .select("id, check_in, check_out, label")
+    .maybeSingle();
+  if (error) throw error;
+  return data;
+}
+
+// Also clears the stay's checklist and notes rows, which nothing else would ever
+// read again. Returns false, touching nothing else, when no stay has that id.
+export async function deleteAdhocStay(propertyId: string, id: string): Promise<boolean> {
+  const { data, error } = await getSupabase()
+    .from("adhoc_stays")
+    .delete()
+    .eq("property_id", propertyId)
+    .eq("id", id)
+    .select("id");
+  if (error) throw error;
+  if (!data?.length) return false;
+  for (const table of ["checklist_state", "booking_notes"]) {
+    const { error: cleanupError } = await getSupabase()
+      .from(table)
+      .delete()
+      .eq("property_id", propertyId)
+      .eq("booking_id", id);
+    if (cleanupError) throw cleanupError;
+  }
+  return true;
+}
+
 // --- briefings -------------------------------------------------------------
 
 export async function createBriefing(input: {

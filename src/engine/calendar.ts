@@ -80,6 +80,47 @@ export function adhocToBooking(stay: AdhocStay): Booking {
   };
 }
 
+/** Everything wrong with a stay about to be saved. Empty means it's valid. */
+export function validateAdhocStay(stay: Omit<AdhocStay, "id">): string[] {
+  const problems: string[] = [];
+  const checkInValid = isRealDate(stay.check_in);
+  const checkOutValid = isRealDate(stay.check_out);
+  if (!checkInValid) problems.push(`Check-in "${stay.check_in}" is not a real YYYY-MM-DD date.`);
+  if (!checkOutValid) problems.push(`Check-out "${stay.check_out}" is not a real YYYY-MM-DD date.`);
+  if (checkInValid && checkOutValid && stay.check_out <= stay.check_in) {
+    problems.push("Check-out must be after check-in.");
+  }
+  if (!stay.label.trim()) problems.push("Label must not be empty.");
+  return problems;
+}
+
+/**
+ * The stays sharing a night with the given dates. Check-out day isn't a night, so
+ * back-to-back stays don't overlap.
+ */
+export function findOverlaps(
+  dates: { checkIn: string; checkOut: string },
+  stays: Booking[],
+): Booking[] {
+  return stays.filter((s) => s.checkIn < dates.checkOut && dates.checkIn < s.checkOut);
+}
+
+/** When a stay shows on the dashboard, given the 4-week window in filterToWindow. */
+export function describeVisibility(stay: Omit<AdhocStay, "id">, now: Date = new Date()): string {
+  const [visible] = filterToWindow([adhocToBooking({ id: "", ...stay })], now);
+  if (visible) return "in the dashboard window now";
+  if (stay.check_out < now.toISOString().slice(0, 10)) return "in the past, so it won't show";
+  const checkInMs = Date.parse(stay.check_in + "T00:00:00Z");
+  const from = new Date(checkInMs - FOUR_WEEKS_MS).toISOString().slice(0, 10);
+  return `shows on the dashboard from ${from}`;
+}
+
+function isRealDate(iso: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
+  const ms = Date.parse(iso + "T00:00:00Z");
+  return !Number.isNaN(ms) && new Date(ms).toISOString().slice(0, 10) === iso;
+}
+
 function extractVEvents(text: string): string[] {
   const out: string[] = [];
   let cursor = 0;
