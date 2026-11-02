@@ -445,7 +445,7 @@ Create a `tanstack-start` SKILL.md in `github.com/dhoovDB/claude-skills`. The sk
 
 The work itself happens in the claude-skills repo, not here. This entry exists so the missing skill is visible the next time a TanStack Start task starts — at which point Claude should grep claude-skills for a matching SKILL.md per the global rules.
 
-### Repo hygiene (P2)
+### Repo hygiene
 
 Found in the 2026-11-02 portfolio audit. None of these change what the dashboard does.
 
@@ -454,7 +454,7 @@ Found in the 2026-11-02 portfolio audit. None of these change what the dashboard
 - [ ] **Delete `bun.lock`.** What: remove the Bun lockfile. Why: npm is the package manager and `package-lock.json` is canonical, so a second lockfile can drift and point tooling at the wrong manager. Done when: `bun.lock` is gone and `npm ci` installs clean.
 - [ ] **Remove the remaining Lovable scaffolding.** What: delete `.lovable/` (the template's `plan.md` and `project.json`) and `src/hooks/use-mobile.tsx`, which nothing imports, and rename the `package.json` name from `tanstack_start_ts` to the repo name. Why: they describe the Lovable starter, which the code has outgrown. Done when: the files are gone, the package name matches the repo, and `npm run build`, `npm test` and `npm run lint` pass.
 - [ ] **Fix the stale `PROPERTY_ID` comment in `.env.example`.** What: line 15 says URL-based property routing is deferred to Task 9. Why: Task 9 shipped without it, and the work now lives in the v2 "URL-based property routing" item. Done when: the comment points at the v2 item.
-- [ ] **Move shared types out of `src/client/types.ts`.** What: `src/engine/`, `src/api/gcal.ts` and `src/db/supabase.ts` import `Booking`, `ChecklistKey` and `AdhocStay` from `src/client/types.ts`. Why: the pure engine depends on the client layer for its types, against the layer map's direction. The imports are type-only, so there is no runtime effect. Done when: shared types live outside `src/client/`, nothing outside `src/client/` imports from it, and `npm test` (including the plain-Node `scripts/adhoc-stay.test.ts`) passes.
+- [ ] **Move shared types out of `src/client/types.ts`.** What: `src/engine/`, `src/api/gcal.ts`, `src/db/supabase.ts`, `src/demo/fixtures.ts`, `src/routes/index.tsx` and `scripts/adhoc-stay.ts` import shared types such as `Booking`, `Gap`, `ChecklistKey` and `AdhocStay` from `src/client/types.ts`. Why: the pure engine depends on the client layer for its types, against the layer map's direction. The imports are type-only, so there is no runtime effect. Done when: shared types live outside `src/client/`, nothing outside `src/client/` imports from it, and `npm test` (including the plain-Node `scripts/adhoc-stay.test.ts`) passes.
 - [ ] **Add a LICENSE (owner decision).** What: pick a license and commit it, or record a decision to keep the repo unlicensed. Why: the repo is public with no license file, so default copyright applies and readers have no stated reuse terms. Done when: a `LICENSE` file is committed or the decision is in the decision log.
 
 **CI.** The 2026-11-02 audit confirmed the repo has no CI workflow (no `.github/`). CI stays deferred per the v2 "Automated tests" item and decision log 2026-05-22, so there is no separate item here.
