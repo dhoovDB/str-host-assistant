@@ -72,11 +72,16 @@ src/engine/calendar.ts          ← parse iCal feed, merge ad hoc stays into a s
 src/engine/gaps.ts              ← compute open gaps between bookings (pure)
 src/engine/briefing.ts          ← buildPrompt from config + state (pure)
 src/api/claude.ts               ← Claude API call, isolated
-src/api/gcal.ts                 ← Google Calendar fetch, isolated
+src/api/gcal.ts                 ← iCal feed fetch, isolated
 src/db/supabase.ts              ← checklist + feedback + ad hoc stays read/write
-src/server/routes.ts            ← API routes
+src/routes/index.tsx            ← dashboard route + server functions (createServerFn)
+src/routes/__root.tsx           ← HTML shell, 404/error pages
+src/server.ts                   ← Worker SSR entry
 src/client/                     ← React components
+src/demo/                       ← demo-mode fixtures
 scripts/adhoc-stay.ts           ← add, list, update, delete ad hoc stays (CLI)
+supabase/                       ← schema.sql (tables, RLS, idempotent migrations) + queries.sql
+e2e/                            ← Playwright specs
 ```
 
 ## Ad hoc stays
@@ -95,7 +100,7 @@ Stays arranged outside Airbnb live in the `adhoc_stays` table. There is no entry
 
 ## Feedback mechanism
 
-Thumbs up/down on the briefing panel POSTs to `/api/feedback` with `{briefingId, helpful}`. Both buttons disable after one vote. Once 3 or more new unhelpful votes have accumulated since the last review, query Supabase for unhelpful briefings, look for patterns, and edit `briefing-rules.json` to fix them.
+Thumbs up/down on the briefing panel calls the `submitBriefingFeedback` server function with `{briefingId, helpful}`. Both buttons disable after one vote. Once 3 or more new unhelpful votes have accumulated since the last review, query Supabase for unhelpful briefings, look for patterns, and edit `briefing-rules.json` to fix them.
 
 This is the robotics control loop pattern applied to a dashboard: sense → log outcome → adjust parameters → repeat.
 
@@ -126,3 +131,7 @@ The 2026-05-15 entry above documents a change to this CLAUDE.md, so it now lives
 ### 2026-10-04 — Feedback review is vote-triggered, not every 2 weeks
 
 The Feedback mechanism section now reviews once 3+ new unhelpful votes accumulate, replacing the fixed 2-week cadence (see ROADMAP decision log 2026-10-04).
+
+### 2026-11-02 — Layer map brought current
+
+The layer map dropped `src/server/routes.ts`, a path that never existed in this repo, and gained the route files, the Worker entry, `src/demo/`, `supabase/` and `e2e/`. `src/api/gcal.ts` is now described as the iCal feed fetch. The Feedback mechanism section names the `submitBriefingFeedback` server function in place of a `/api/feedback` route.
