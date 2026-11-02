@@ -4,7 +4,14 @@
 
 Self-managed short-term rental hosts shouldn't have to choose between running their property like a small business and burning out on the coordination overhead. This dashboard exists so a host can start each day knowing which bookings need action and where revenue is leaking — without holding the whole operation in their head.
 
-Each phase tightens that loop. v1 surfaces the daily picture and flags unbookable gaps before they cost a booking. v4 absorbs cleaner scheduling and maintenance tracking, so the operations loop runs through the system instead of through the host's working memory.
+Each phase tightens that loop. v1 surfaces the daily picture and flags unbookable gaps before they cost a booking. v3 and v4 absorb cleaner scheduling and maintenance tracking, so the operations loop runs through the system instead of through the host's working memory.
+
+## Current status (2026-11-02)
+
+- **Phase:** Ad hoc stays live since 2026-11-01; two owner checks pending (live card persistence, and the 2026-11-02 briefing).
+- **Next:** Owner checks that a checklist toggle and a note on the live ad hoc card survive a reload, and that the 2026-11-02 briefing mentions the stay. Then the move to a new worker URL (not started).
+- **Open decisions:** none blocking. The P2 LICENSE item under Developer tooling waits on the owner.
+- **Blockers:** none
 
 ---
 
@@ -438,6 +445,20 @@ Create a `tanstack-start` SKILL.md in `github.com/dhoovDB/claude-skills`. The sk
 
 The work itself happens in the claude-skills repo, not here. This entry exists so the missing skill is visible the next time a TanStack Start task starts — at which point Claude should grep claude-skills for a matching SKILL.md per the global rules.
 
+### Repo hygiene (P2)
+
+Found in the 2026-11-02 portfolio audit. None of these change what the dashboard does.
+
+- [ ] **Archive the shipped v1 block to `ROADMAP-ARCHIVE.md`.** What: move v1 (Tasks 1 to 12) and decision-log entries that no longer constrain current work, verbatim, leaving a one-line pointer. Why: this file is over 550 lines, and the portfolio ROADMAP standard caps it at about 300 because every session reads it. Done when: ROADMAP.md is under about 300 lines, the README links to Task 2 and the decision log still resolve, and the move lands as its own markdown-only commit.
+- [ ] **Replace the Lovable page metadata.** What: `src/routes/__root.tsx` (lines 75 to 82) still sets the title "Lovable App", the description "Lovable Generated Project", the author, and the `og:` and `twitter:` tags from the Lovable template. Why: `/` sets its own title and description, so the leftovers show in link previews and on the 404 and error pages. Done when: those tags carry the product name and no "Lovable" string remains in the root head.
+- [ ] **Delete `bun.lock`.** What: remove the Bun lockfile. Why: npm is the package manager and `package-lock.json` is canonical, so a second lockfile can drift and point tooling at the wrong manager. Done when: `bun.lock` is gone and `npm ci` installs clean.
+- [ ] **Remove the remaining Lovable scaffolding.** What: delete `.lovable/` (the template's `plan.md` and `project.json`) and `src/hooks/use-mobile.tsx`, which nothing imports, and rename the `package.json` name from `tanstack_start_ts` to the repo name. Why: they describe the Lovable starter, which the code has outgrown. Done when: the files are gone, the package name matches the repo, and `npm run build`, `npm test` and `npm run lint` pass.
+- [ ] **Fix the stale `PROPERTY_ID` comment in `.env.example`.** What: line 15 says URL-based property routing is deferred to Task 9. Why: Task 9 shipped without it, and the work now lives in the v2 "URL-based property routing" item. Done when: the comment points at the v2 item.
+- [ ] **Move shared types out of `src/client/types.ts`.** What: `src/engine/`, `src/api/gcal.ts` and `src/db/supabase.ts` import `Booking`, `ChecklistKey` and `AdhocStay` from `src/client/types.ts`. Why: the pure engine depends on the client layer for its types, against the layer map's direction. The imports are type-only, so there is no runtime effect. Done when: shared types live outside `src/client/`, nothing outside `src/client/` imports from it, and `npm test` (including the plain-Node `scripts/adhoc-stay.test.ts`) passes.
+- [ ] **Add a LICENSE (owner decision).** What: pick a license and commit it, or record a decision to keep the repo unlicensed. Why: the repo is public with no license file, so default copyright applies and readers have no stated reuse terms. Done when: a `LICENSE` file is committed or the decision is in the decision log.
+
+**CI.** The 2026-11-02 audit confirmed the repo has no CI workflow (no `.github/`). CI stays deferred per the v2 "Automated tests" item and decision log 2026-05-22, so there is no separate item here.
+
 ---
 
 ## Decision log
@@ -532,4 +553,4 @@ Round 2 found 0 unhelpful votes in 14 weeks (3 helpful votes total), so the fixe
 
 ---
 
-*Last updated: 2026-11-01 (planned the move to a new worker URL)*
+*Last updated: 2026-11-02 (portfolio audit: Current status, backlog items)*
